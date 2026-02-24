@@ -1,0 +1,162 @@
+name: Build Release APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: 'WaSMS build record ID'
+        required: true
+        type: string
+      build_type:
+        description: 'Build type (debug, staging, release)'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - staging
+          - release
+      version_code:
+        description: 'Version code (integer)'
+        required: true
+        type: string
+      version_name:
+        description: 'Version name (semver)'
+        required: true
+        type: string
+      api_base_url:
+        description: 'API base URL for the app'
+        required: true
+        type: string
+      ws_host:
+        description: 'WebSocket host'
+        required: true
+        type: string
+      ws_path:
+        description: 'WebSocket path'
+        required: true
+        type: string
+      fcm_enabled:
+        description: 'Enable Firebase Cloud Messaging'
+        required: true
+        default: 'true'
+        type: string
+      cert_pinning_enabled:
+        description: 'Enable certificate pinning'
+        required: true
+        default: 'true'
+        type: string
+      callback_url:
+        description: 'WaSMS webhook callback URL'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Notify WaSMS - Building
+        run: |
+          PAYLOAD=$(cat <<EOF
+          {"build_id":"${{ inputs.build_id }}","status":"building","run_id":${{ github.run_id }},"run_url":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
+          EOF
+          )
+          SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.WEBHOOK_SECRET }}" | awk '{print $2}')"
+          curl -s -X POST "${{ inputs.callback_url }}" \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: $SIGNATURE" \
+            -d "$PAYLOAD" || true
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore/release.jks
+
+      - name: Write google-services.json
+        run: |
+          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+
+      - name: Determine Gradle task
+        id: task
+        run: |
+          BUILD_TYPE="${{ inputs.build_type }}"
+          case "$BUILD_TYPE" in
+            debug)   echo "task=assembleDebug" >> $GITHUB_OUTPUT ;;
+            staging) echo "task=assembleStaging" >> $GITHUB_OUTPUT ;;
+            release) echo "task=assembleRelease" >> $GITHUB_OUTPUT ;;
+            *)       echo "task=assembleDebug" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Build APK
+        env:
+          KEYSTORE_PATH: app/keystore/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew ${{ steps.task.outputs.task }} --no-daemon \
+            -PoverrideVersionCode=${{ inputs.version_code }} \
+            -PoverrideVersionName=${{ inputs.version_name }} \
+            -PoverrideApiBaseUrl="${{ inputs.api_base_url }}" \
+            -PoverrideWsHost="${{ inputs.ws_host }}" \
+            -PoverrideWsPath="${{ inputs.ws_path }}" \
+            -PoverrideFcmEnabled=${{ inputs.fcm_enabled }} \
+            -PoverrideCertPinningEnabled=${{ inputs.cert_pinning_enabled }}
+
+      - name: Find APK
+        id: apk
+        run: |
+          APK_PATH=$(find app/build/outputs/apk -name "*.apk" -type f | head -1)
+          echo "path=$APK_PATH" >> $GITHUB_OUTPUT
+          FILENAME="wasms-${{ inputs.build_type }}-v${{ inputs.version_name }}.apk"
+          echo "filename=$FILENAME" >> $GITHUB_OUTPUT
+
+      - name: Rename APK
+        run: |
+          cp "${{ steps.apk.outputs.path }}" "${{ steps.apk.outputs.filename }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ inputs.build_type }}-v${{ inputs.version_name }}
+          path: ${{ steps.apk.outputs.filename }}
+          retention-days: 30
+
+      - name: Notify WaSMS - Completed
+        if: success()
+        run: |
+          PAYLOAD=$(cat <<EOF
+          {"build_id":"${{ inputs.build_id }}","status":"completed","run_id":${{ github.run_id }},"run_url":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
+          EOF
+          )
+          SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.WEBHOOK_SECRET }}" | awk '{print $2}')"
+          curl -s -X POST "${{ inputs.callback_url }}" \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: $SIGNATURE" \
+            -d "$PAYLOAD" || true
+
+      - name: Notify WaSMS - Failed
+        if: failure()
+        run: |
+          PAYLOAD=$(cat <<EOF
+          {"build_id":"${{ inputs.build_id }}","status":"failure","run_id":${{ github.run_id }},"run_url":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
+          EOF
+          )
+          SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.WEBHOOK_SECRET }}" | awk '{print $2}')"
+          curl -s -X POST "${{ inputs.callback_url }}" \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: $SIGNATURE" \
+            -d "$PAYLOAD" || true

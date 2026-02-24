@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow cleartext only for debug builds (localhost) -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Debug override for local development -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+
+    <!-- Pin certificates for WaSMS API -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">wasms.net</domain>
+        <pin-set expiration="2027-01-01">
+            <!-- SHA-256 pins will be populated during deployment -->
+            <!-- Primary pin -->
+            <pin digest="SHA-256">PLACEHOLDER_PRIMARY_PIN=</pin>
+            <!-- Backup pin -->
+            <pin digest="SHA-256">PLACEHOLDER_BACKUP_PIN=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>

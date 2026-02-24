@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WaSMS Gateway</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">Turn Your Phone Into an SMS Gateway</string>
+    <string name="onboarding_welcome_subtitle">Send bulk SMS campaigns directly from your phone number</string>
+    <string name="onboarding_scan_qr">Scan QR Code</string>
+    <string name="onboarding_manual_token">Enter Token Manually</string>
+    <string name="onboarding_permissions_title">We Need a Few Permissions</string>
+    <string name="onboarding_sms_permission">SMS Permission</string>
+    <string name="onboarding_sms_permission_desc">To send messages on your behalf</string>
+    <string name="onboarding_phone_permission">Phone Permission</string>
+    <string name="onboarding_phone_permission_desc">To detect your SIM cards and carrier</string>
+    <string name="onboarding_notification_permission">Notifications</string>
+    <string name="onboarding_notification_permission_desc">To keep you updated on delivery status</string>
+    <string name="onboarding_battery_title">Stay Running in Background</string>
+    <string name="onboarding_battery_desc">Disable battery optimization so messages send reliably</string>
+    <string name="onboarding_test_sms_title">Send a Test Message</string>
+    <string name="onboarding_test_sms_desc">Enter your own number to verify everything works</string>
+    <string name="onboarding_success_title">You\'re All Set!</string>
+    <string name="onboarding_success_desc">Your device is now online and ready to send</string>
+
+    <!-- Home Screen -->
+    <string name="home_status_sending">Sending</string>
+    <string name="home_status_idle">Idle</string>
+    <string name="home_status_paused">Paused</string>
+    <string name="home_status_offline">Offline</string>
+    <string name="home_sent_today">Sent Today</string>
+    <string name="home_queue_remaining">In Queue</string>
+    <string name="home_delivery_rate">Delivery Rate</string>
+    <string name="home_active_sim">Active SIM</string>
+
+    <!-- Service Notification -->
+    <string name="notification_channel_service">Gateway Service</string>
+    <string name="notification_channel_service_desc">Keeps the SMS gateway running</string>
+    <string name="notification_channel_alerts">Alerts</string>
+    <string name="notification_channel_alerts_desc">Important status changes and errors</string>
+    <string name="notification_channel_digest">Daily Digest</string>
+    <string name="notification_channel_digest_desc">Daily performance summary</string>
+    <string name="notification_service_title">WaSMS Gateway Active</string>
+    <string name="notification_service_sending">Sending messages\u2026 %1$d in queue</string>
+    <string name="notification_service_idle">Ready and waiting for messages</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_sim_management">SIM Management</string>
+    <string name="settings_send_speed">Send Speed</string>
+    <string name="settings_pause_sending">Pause Sending</string>
+    <string name="settings_logout">Disconnect Device</string>
+
+    <!-- Errors -->
+    <string name="error_no_internet">No internet connection</string>
+    <string name="error_server_unreachable">Cannot reach WaSMS server</string>
+    <string name="error_token_expired">Session expired. Please reconnect.</string>
+    <string name="error_sms_permission_denied">SMS permission required to send messages</string>
+    <string name="error_sim_not_ready">SIM card not ready</string>
+</resources>
