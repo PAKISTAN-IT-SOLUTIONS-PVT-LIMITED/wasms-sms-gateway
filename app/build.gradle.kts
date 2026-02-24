@@ -13,7 +13,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "net.wasms.smsgateway"
+        applicationId = "com.wasms.gateway"
         minSdk = 26
         targetSdk = 35
         versionCode = (project.findProperty("overrideVersionCode") as? String)?.toIntOrNull() ?: 1
