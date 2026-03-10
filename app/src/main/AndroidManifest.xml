@@ -60,7 +60,7 @@
             android:foregroundServiceType="specialUse"
             android:exported="false" />
 
-        <!-- FCM Service -->
+        <!-- FCM Service — disabled until Firebase is configured
         <service
             android:name=".data.remote.fcm.WaSmsFcmService"
             android:exported="false">
@@ -68,6 +68,7 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+        -->
 
         <!-- SMS Delivery Report Receiver -->
         <receiver
@@ -111,60 +112,13 @@
                 tools:node="remove" />
         </provider>
 
-        <!--
-            Disable Firebase auto-initialization until real google-services.json
-            credentials are configured. With placeholder values, auto-init crashes
-            the app on startup. Firebase will be initialized manually when ready.
-        -->
-        <meta-data
-            android:name="firebase_data_collection_default_enabled"
-            android:value="false" />
-        <meta-data
-            android:name="firebase_crashlytics_collection_enabled"
-            android:value="false" />
-        <meta-data
-            android:name="firebase_analytics_collection_enabled"
-            android:value="false" />
-        <meta-data
-            android:name="firebase_messaging_auto_init_enabled"
-            android:value="false" />
+        <!-- Firebase fully removed from build — no meta-data needed -->
 
-        <!--
-            Remove Firebase ContentProviders entirely. These run BEFORE
-            Application.onCreate() and crash with placeholder google-services.json.
-            Even with auto-init disabled, the providers still initialize core
-            Firebase infrastructure which fails with invalid project credentials.
-            Re-enable these when real Firebase credentials are configured.
-        -->
-        <provider
-            android:name="com.google.firebase.provider.FirebaseInitProvider"
-            android:authorities="${applicationId}.firebaseinitprovider"
-            android:exported="false"
-            tools:node="remove" />
-        <provider
-            android:name="com.google.android.gms.measurement.AppMeasurementInstallReferrerReceiver"
-            android:authorities="${applicationId}.firebasemeasurement"
-            android:exported="false"
-            tools:node="remove" />
-        <provider
-            android:name="com.google.android.gms.measurement.AppMeasurementContentProvider"
-            android:authorities="${applicationId}.measurement_init"
-            android:exported="false"
-            tools:node="remove" />
-        <provider
-            android:name="com.google.firebase.crashlytics.CrashlyticsInitProvider"
-            android:authorities="${applicationId}.crashlyticsinitprovider"
-            android:exported="false"
-            tools:node="remove" />
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher" />
-
-        <!-- Crash Report Activity -->
+        <!-- Crash Report Activity (same process — separate process would
+             create another WaSmsApp instance that may also crash) -->
         <activity
             android:name=".presentation.CrashReportActivity"
             android:exported="false"
-            android:theme="@style/Theme.WaSMS"
-            android:process=":crash_handler" />
+            android:theme="@style/Theme.WaSMS" />
     </application>
 </manifest>

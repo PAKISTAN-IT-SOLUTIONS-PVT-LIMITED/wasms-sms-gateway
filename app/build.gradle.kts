@@ -5,7 +5,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.google.services)
+    // google-services plugin removed — Firebase disabled until real credentials configured
+    // alias(libs.plugins.google.services)
 }
 
 android {
@@ -152,11 +153,11 @@ dependencies {
     // DataStore
     implementation(libs.datastore.preferences)
 
-    // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.messaging)
-    implementation(libs.firebase.crashlytics)
-    implementation(libs.firebase.analytics)
+    // Firebase — disabled until real google-services.json is configured
+    // implementation(platform(libs.firebase.bom))
+    // implementation(libs.firebase.messaging)
+    // implementation(libs.firebase.crashlytics)
+    // implementation(libs.firebase.analytics)
 
     // Play Integrity
     implementation(libs.play.integrity)
