@@ -1,25 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- WaSMS Brand Colors (Material 3) -->
-    <!-- Primary: Blue (per Agent 15 recommendation - avoids green habituation) -->
-    <color name="primary">#2563EB</color>
+    <!-- WaSMS Brand Colors — matching wasms.net website -->
+    <!-- Primary: WhatsApp Green #128C7E -->
+    <color name="primary">#128C7E</color>
     <color name="on_primary">#FFFFFF</color>
-    <color name="primary_container">#DBEAFE</color>
-    <color name="on_primary_container">#1E3A5F</color>
+    <color name="primary_dark">#075E54</color>
+    <color name="primary_container">#B2DFDB</color>
+    <color name="on_primary_container">#00201D</color>
 
-    <!-- Secondary: Teal -->
-    <color name="secondary">#0D9488</color>
-    <color name="on_secondary">#FFFFFF</color>
+    <!-- Accent: Light Green -->
+    <color name="accent">#25D366</color>
+    <color name="on_accent">#FFFFFF</color>
 
     <!-- Surface -->
+    <color name="background">#FFFFFF</color>
     <color name="surface">#FAFAFA</color>
-    <color name="on_surface">#1A1A1A</color>
+    <color name="on_surface">#1E293B</color>
+
+    <!-- Text -->
+    <color name="text_primary">#1E293B</color>
+    <color name="text_on_primary">#FFFFFF</color>
 
     <!-- Status Colors -->
-    <color name="status_sending">#2563EB</color>
+    <color name="status_sending">#128C7E</color>
     <color name="status_idle">#6B7280</color>
     <color name="status_paused">#F59E0B</color>
     <color name="status_offline">#EF4444</color>
-    <color name="status_delivered">#10B981</color>
+    <color name="status_delivered">#25D366</color>
     <color name="status_failed">#EF4444</color>
 </resources>

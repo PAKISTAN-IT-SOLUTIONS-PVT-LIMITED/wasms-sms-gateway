@@ -147,7 +147,7 @@ private fun WaSmsBottomBar(
 ) {
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        contentColor = MaterialTheme.colorScheme.primary,
     ) {
         BottomNavItem.entries.forEach { item ->
             val selected = currentRoute == item.screen.route

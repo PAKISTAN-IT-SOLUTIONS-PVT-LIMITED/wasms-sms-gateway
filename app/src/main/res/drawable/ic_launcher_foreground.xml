@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   WaSMS Gateway launcher icon foreground.
-  A simple SMS/message bubble icon centered in the adaptive icon safe zone.
-  Replace with production artwork from the design team.
+  WhatsApp-style speech bubble with signal waves — white on green (#128C7E) background.
+  Centered in the adaptive icon safe zone (66dp inner area within 108dp).
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -10,19 +10,19 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- SMS bubble shape -->
+    <!-- SMS speech bubble shape -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M34,36 L74,36 C76.2,36 78,37.8 78,40 L78,60 C78,62.2 76.2,64 74,64 L58,64 L54,72 L50,64 L34,64 C31.8,64 30,62.2 30,60 L30,40 C30,37.8 31.8,36 34,36 Z" />
+        android:pathData="M34,34 L74,34 C76.8,34 79,36.2 79,39 L79,61 C79,63.8 76.8,66 74,66 L58,66 L54,74 L50,66 L34,66 C31.2,66 29,63.8 29,61 L29,39 C29,36.2 31.2,34 34,34 Z" />
 
-    <!-- Three dots inside bubble -->
+    <!-- Three dots inside bubble (messaging indicator) -->
     <path
-        android:fillColor="#2563EB"
-        android:pathData="M42,50 m-3,0 a3,3 0,1 1,6 0 a3,3 0,1 1,-6 0" />
+        android:fillColor="#128C7E"
+        android:pathData="M42,50 m-3.5,0 a3.5,3.5 0,1 1,7 0 a3.5,3.5 0,1 1,-7 0" />
     <path
-        android:fillColor="#2563EB"
-        android:pathData="M54,50 m-3,0 a3,3 0,1 1,6 0 a3,3 0,1 1,-6 0" />
+        android:fillColor="#128C7E"
+        android:pathData="M54,50 m-3.5,0 a3.5,3.5 0,1 1,7 0 a3.5,3.5 0,1 1,-7 0" />
     <path
-        android:fillColor="#2563EB"
-        android:pathData="M66,50 m-3,0 a3,3 0,1 1,6 0 a3,3 0,1 1,-6 0" />
+        android:fillColor="#128C7E"
+        android:pathData="M66,50 m-3.5,0 a3.5,3.5 0,1 1,7 0 a3.5,3.5 0,1 1,-7 0" />
 </vector>

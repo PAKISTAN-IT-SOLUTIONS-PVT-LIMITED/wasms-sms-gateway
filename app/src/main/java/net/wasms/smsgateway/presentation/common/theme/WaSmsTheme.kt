@@ -16,28 +16,28 @@ import androidx.core.view.WindowCompat
 
 // =============================================================================
 // Material 3 Color Schemes
-// Primary: Blue (#2563EB) per Agent 15 behavioral design
+// Primary: Green (#128C7E) matching wasms.net website branding
 // =============================================================================
 
 private val LightColorScheme = lightColorScheme(
-    primary = Blue50,
+    primary = Green50,
     onPrimary = Color.White,
-    primaryContainer = Blue90,
-    onPrimaryContainer = Blue10,
+    primaryContainer = Green90,
+    onPrimaryContainer = Green10,
     secondary = Slate40,
     onSecondary = Color.White,
     secondaryContainer = Slate90,
     onSecondaryContainer = Slate10,
-    tertiary = Indigo50,
+    tertiary = Teal50,
     onTertiary = Color.White,
-    tertiaryContainer = Indigo90,
-    onTertiaryContainer = Indigo10,
+    tertiaryContainer = Teal90,
+    onTertiaryContainer = Teal10,
     error = Red40,
     onError = Color.White,
     errorContainer = Red90,
     onErrorContainer = Red10,
     background = Color.White,
-    onBackground = Slate10,
+    onBackground = Slate20,
     surface = SurfaceLight,
     onSurface = OnSurfaceLight,
     surfaceVariant = Slate95,
@@ -51,18 +51,18 @@ private val LightColorScheme = lightColorScheme(
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Blue70,
-    onPrimary = Blue10,
-    primaryContainer = Blue30,
-    onPrimaryContainer = Blue90,
+    primary = Green70,
+    onPrimary = Green10,
+    primaryContainer = Green30,
+    onPrimaryContainer = Green90,
     secondary = Slate70,
     onSecondary = Slate10,
     secondaryContainer = Slate30,
     onSecondaryContainer = Slate90,
-    tertiary = Indigo70,
-    onTertiary = Indigo10,
-    tertiaryContainer = Indigo30,
-    onTertiaryContainer = Indigo90,
+    tertiary = Teal70,
+    onTertiary = Teal10,
+    tertiaryContainer = Teal30,
+    onTertiaryContainer = Teal90,
     error = Red70,
     onError = Red10,
     errorContainer = Red30,
@@ -125,7 +125,7 @@ private val LightStatusColors = StatusColors(
 
 private val DarkStatusColors = StatusColors(
     sending = StatusSendingDark,
-    sendingContainer = Blue20,
+    sendingContainer = Green20,
     idle = StatusIdleDark,
     idleContainer = Slate20,
     paused = StatusPausedAmberDark,
@@ -170,8 +170,13 @@ fun WaSmsTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.surface.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            // Use dark green for status bar to match WaSMS branding
+            window.statusBarColor = if (darkTheme) {
+                colorScheme.surface.toArgb()
+            } else {
+                Green40.toArgb() // #075E54 dark green
+            }
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
 

@@ -116,6 +116,10 @@
             credentials are configured. With placeholder values, auto-init crashes
             the app on startup. Firebase will be initialized manually when ready.
         -->
+        <!-- Disable ALL Firebase auto-initialization with placeholder credentials -->
+        <meta-data
+            android:name="firebase_data_collection_default_enabled"
+            android:value="false" />
         <meta-data
             android:name="firebase_crashlytics_collection_enabled"
             android:value="false" />
@@ -123,7 +127,17 @@
             android:name="firebase_analytics_collection_enabled"
             android:value="false" />
         <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
+        <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher" />
+
+        <!-- Crash Report Activity -->
+        <activity
+            android:name=".presentation.CrashReportActivity"
+            android:exported="false"
+            android:theme="@style/Theme.WaSMS"
+            android:process=":crash_handler" />
     </application>
 </manifest>

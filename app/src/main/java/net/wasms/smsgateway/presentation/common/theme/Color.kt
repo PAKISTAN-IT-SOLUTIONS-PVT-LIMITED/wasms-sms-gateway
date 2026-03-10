@@ -3,26 +3,26 @@ package net.wasms.smsgateway.presentation.common.theme
 import androidx.compose.ui.graphics.Color
 
 // =============================================================================
-// WaSMS Color System
-// Primary: Blue (#2563EB) — NOT green (avoids habituation per Agent 15)
+// WaSMS Color System — matching wasms.net website branding
+// Primary: Green (#128C7E) — WhatsApp green
 // =============================================================================
 
-// Primary Blue
-val Blue10 = Color(0xFF001A40)
-val Blue20 = Color(0xFF002D6E)
-val Blue30 = Color(0xFF00429E)
-val Blue40 = Color(0xFF1659C7)
-val Blue50 = Color(0xFF2563EB) // Primary
-val Blue60 = Color(0xFF5A8AEF)
-val Blue70 = Color(0xFF89AEF5)
-val Blue80 = Color(0xFFB5D0FA)
-val Blue90 = Color(0xFFD9E6FD)
-val Blue95 = Color(0xFFEDF2FE)
-val Blue99 = Color(0xFFF8FAFF)
+// Primary Green (WaSMS brand)
+val Green10 = Color(0xFF00201D)
+val Green20 = Color(0xFF003731)
+val Green30 = Color(0xFF005047)
+val Green40 = Color(0xFF075E54) // primaryDark
+val Green50 = Color(0xFF128C7E) // primary
+val Green60 = Color(0xFF25D366) // accent / light green
+val Green70 = Color(0xFF5EDDA0)
+val Green80 = Color(0xFFA0E8C5)
+val Green90 = Color(0xFFB2DFDB) // primaryContainer
+val Green95 = Color(0xFFE0F2F1)
+val Green99 = Color(0xFFF0FFF4)
 
-// Secondary (Slate)
+// Secondary (Slate — for text and surfaces)
 val Slate10 = Color(0xFF0F172A)
-val Slate20 = Color(0xFF1E293B)
+val Slate20 = Color(0xFF1E293B) // text primary
 val Slate30 = Color(0xFF334155)
 val Slate40 = Color(0xFF475569)
 val Slate50 = Color(0xFF64748B)
@@ -33,17 +33,17 @@ val Slate90 = Color(0xFFE2E8F0)
 val Slate95 = Color(0xFFF1F5F9)
 val Slate99 = Color(0xFFF8FAFC)
 
-// Tertiary (Indigo)
-val Indigo10 = Color(0xFF1A0050)
-val Indigo20 = Color(0xFF2D007A)
-val Indigo30 = Color(0xFF3730A3)
-val Indigo40 = Color(0xFF4338CA)
-val Indigo50 = Color(0xFF4F46E5)
-val Indigo60 = Color(0xFF6366F1)
-val Indigo70 = Color(0xFF818CF8)
-val Indigo80 = Color(0xFFA5B4FC)
-val Indigo90 = Color(0xFFC7D2FE)
-val Indigo95 = Color(0xFFE0E7FF)
+// Tertiary (Teal)
+val Teal10 = Color(0xFF001F1A)
+val Teal20 = Color(0xFF003D32)
+val Teal30 = Color(0xFF005B4B)
+val Teal40 = Color(0xFF007A65)
+val Teal50 = Color(0xFF009980)
+val Teal60 = Color(0xFF26B89B)
+val Teal70 = Color(0xFF4DD0B5)
+val Teal80 = Color(0xFF80E8D0)
+val Teal90 = Color(0xFFB3F0E5)
+val Teal95 = Color(0xFFE0F7F3)
 
 // Error (Red)
 val Red10 = Color(0xFF410002)
@@ -61,10 +61,10 @@ val Red95 = Color(0xFFFEF2F2)
 // Status Colors — used by StatusIndicator and throughout the app
 // =============================================================================
 
-// Sending (Blue — matches primary brand)
-val StatusSending = Blue50
-val StatusSendingLight = Blue90
-val StatusSendingDark = Blue40
+// Sending (Green — matches primary brand)
+val StatusSending = Green50
+val StatusSendingLight = Green90
+val StatusSendingDark = Green40
 
 // Idle (Gray)
 val StatusIdle = Slate50
@@ -81,10 +81,10 @@ val StatusOffline = Red50
 val StatusOfflineLight = Red90
 val StatusOfflineDark = Red40
 
-// Delivered (Green)
-val StatusDelivered = Color(0xFF16A34A)
+// Delivered (Green — accent green)
+val StatusDelivered = Color(0xFF25D366)
 val StatusDeliveredLight = Color(0xFFDCFCE7)
-val StatusDeliveredDark = Color(0xFF15803D)
+val StatusDeliveredDark = Color(0xFF128C7E)
 
 // Failed (Red — shares with offline but semantically distinct)
 val StatusFailed = Color(0xFFEF4444)
@@ -92,9 +92,9 @@ val StatusFailedLight = Color(0xFFFEE2E2)
 val StatusFailedDark = Color(0xFFDC2626)
 
 // Online (Green — device connected)
-val StatusOnline = Color(0xFF22C55E)
+val StatusOnline = Color(0xFF25D366)
 val StatusOnlineLight = Color(0xFFDCFCE7)
-val StatusOnlineDark = Color(0xFF16A34A)
+val StatusOnlineDark = Color(0xFF128C7E)
 
 // Error status (Orange-red)
 val StatusError = Color(0xFFEA580C)
@@ -108,7 +108,7 @@ val SurfaceLight = Color(0xFFFAFAFA)
 val SurfaceContainerLight = Color(0xFFF5F5F5)
 val SurfaceContainerHighLight = Color(0xFFEEEEEE)
 val SurfaceContainerHighestLight = Color(0xFFE0E0E0)
-val OnSurfaceLight = Color(0xFF1C1B1F)
+val OnSurfaceLight = Color(0xFF1E293B)
 val OnSurfaceVariantLight = Color(0xFF49454F)
 
 // =============================================================================

@@ -272,7 +272,7 @@ private fun HomeTopBar(
     TopAppBar(
         title = {
             Text(
-                text = "WaSMS",
+                text = "WaSMS Gateway",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -283,7 +283,7 @@ private fun HomeTopBar(
                     Icon(
                         imageVector = Icons.Filled.PlayArrow,
                         contentDescription = "Resume sending",
-                        tint = WaSmsTheme.statusColors.online,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
             } else if (status.isActive) {
@@ -291,13 +291,15 @@ private fun HomeTopBar(
                     Icon(
                         imageVector = Icons.Filled.Pause,
                         contentDescription = "Pause sending",
-                        tint = WaSmsTheme.statusColors.paused,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.primary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
         ),
     )
 }
