@@ -8,8 +8,9 @@ import androidx.sqlite.db.SupportSQLiteOpenHelper
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import net.wasms.smsgateway.data.local.db.WaSmsDatabase
 import net.wasms.smsgateway.data.local.db.dao.DeliveryReportDao
 import net.wasms.smsgateway.data.local.db.dao.DeviceConfigDao
@@ -33,16 +34,16 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideSupportFactory(context: Context): SupportFactory {
+    fun provideSupportOpenHelperFactory(@ApplicationContext context: Context): SupportOpenHelperFactory {
         val passphrase = getOrCreatePassphrase(context)
-        return SupportFactory(passphrase)
+        return SupportOpenHelperFactory(passphrase)
     }
 
     @Provides
     @Singleton
     fun provideDatabase(
-        context: Context,
-        supportFactory: SupportFactory
+        @ApplicationContext context: Context,
+        supportFactory: SupportOpenHelperFactory
     ): WaSmsDatabase {
         return Room.databaseBuilder(
             context,

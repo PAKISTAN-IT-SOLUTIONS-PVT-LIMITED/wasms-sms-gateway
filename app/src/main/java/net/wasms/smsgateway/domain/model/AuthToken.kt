@@ -14,7 +14,7 @@ data class AuthToken(
         get() = Clock.System.now() >= expiresAt
 
     val isNearExpiry: Boolean
-        get() = Clock.System.now() >= expiresAt.minus(kotlinx.datetime.DateTimePeriod(minutes = 5), kotlinx.datetime.TimeZone.UTC)
+        get() = Clock.System.now() >= expiresAt.minus(kotlin.time.Duration.parse("5m"))
 
     val bearerHeader: String
         get() = "$tokenType $accessToken"

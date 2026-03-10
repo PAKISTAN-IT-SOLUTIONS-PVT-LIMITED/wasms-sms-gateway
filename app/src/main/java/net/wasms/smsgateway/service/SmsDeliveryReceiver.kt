@@ -204,9 +204,6 @@ class SmsDeliveryReceiver : BroadcastReceiver() {
      */
     private fun mapCarrierStatus(status: Int): DeliveryStatus {
         return when {
-            status == AndroidSmsMessage.STATUS_COMPLETE -> DeliveryStatus.COMPLETE
-            status == AndroidSmsMessage.STATUS_FAILED -> DeliveryStatus.FAILED
-            status == AndroidSmsMessage.STATUS_PENDING -> DeliveryStatus.PENDING
             status in 0x00..0x03 -> DeliveryStatus.COMPLETE
             status in 0x20..0x3F -> DeliveryStatus.PENDING  // Temporary error, still trying
             status in 0x40..0x7F -> DeliveryStatus.FAILED   // Permanent failure

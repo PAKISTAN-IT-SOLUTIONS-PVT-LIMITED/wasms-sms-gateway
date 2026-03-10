@@ -108,6 +108,7 @@ dependencies {
     // AndroidX Core
     implementation(libs.androidx.core)
     implementation(libs.androidx.appcompat)
+    implementation(libs.google.material)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.splash)
 

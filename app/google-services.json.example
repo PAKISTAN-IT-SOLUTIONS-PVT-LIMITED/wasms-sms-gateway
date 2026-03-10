@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:YOUR_PROJECT_NUMBER:android:YOUR_APP_HASH",
         "android_client_info": {
-          "package_name": "net.wasms.smsgateway"
+          "package_name": "com.wasms.gateway"
         }
       },
       "oauth_client": [],
@@ -29,7 +29,26 @@
       "client_info": {
         "mobilesdk_app_id": "1:YOUR_PROJECT_NUMBER:android:YOUR_DEBUG_HASH",
         "android_client_info": {
-          "package_name": "net.wasms.smsgateway.debug"
+          "package_name": "com.wasms.gateway.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "YOUR_API_KEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:YOUR_PROJECT_NUMBER:android:YOUR_STAGING_HASH",
+        "android_client_info": {
+          "package_name": "com.wasms.gateway.staging"
         }
       },
       "oauth_client": [],

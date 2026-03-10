@@ -72,6 +72,7 @@ class SimDetector @Inject constructor(
             // Step 4: Map SubscriptionInfo to SimCard domain model
             val simCards = subscriptionInfoList.map { info ->
                 SimCard(
+                    id = "sim_${info.subscriptionId}",
                     subscriptionId = info.subscriptionId,
                     slot = info.simSlotIndex,
                     carrierName = info.carrierName?.toString()
