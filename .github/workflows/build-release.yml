@@ -62,10 +62,7 @@ jobs:
 
       - name: Notify WaSMS - Building
         run: |
-          PAYLOAD=$(cat <<EOF
-          {"build_id":"${{ inputs.build_id }}","status":"building","run_id":${{ github.run_id }},"run_url":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
-          EOF
-          )
+          PAYLOAD='{"build_id":"${{ inputs.build_id }}","status":"building","run_id":${{ github.run_id }},"run_url":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'
           SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.WEBHOOK_SECRET }}" | awk '{print $2}')"
           curl -s -X POST "${{ inputs.callback_url }}" \
             -H "Content-Type: application/json" \
@@ -138,10 +135,7 @@ jobs:
       - name: Notify WaSMS - Completed
         if: success()
         run: |
-          PAYLOAD=$(cat <<EOF
-          {"build_id":"${{ inputs.build_id }}","status":"completed","run_id":${{ github.run_id }},"run_url":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
-          EOF
-          )
+          PAYLOAD='{"build_id":"${{ inputs.build_id }}","status":"completed","run_id":${{ github.run_id }},"run_url":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'
           SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.WEBHOOK_SECRET }}" | awk '{print $2}')"
           curl -s -X POST "${{ inputs.callback_url }}" \
             -H "Content-Type: application/json" \
@@ -151,10 +145,7 @@ jobs:
       - name: Notify WaSMS - Failed
         if: failure()
         run: |
-          PAYLOAD=$(cat <<EOF
-          {"build_id":"${{ inputs.build_id }}","status":"failure","run_id":${{ github.run_id }},"run_url":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}
-          EOF
-          )
+          PAYLOAD='{"build_id":"${{ inputs.build_id }}","status":"failure","run_id":${{ github.run_id }},"run_url":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'
           SIGNATURE="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "${{ secrets.WEBHOOK_SECRET }}" | awk '{print $2}')"
           curl -s -X POST "${{ inputs.callback_url }}" \
             -H "Content-Type: application/json" \
