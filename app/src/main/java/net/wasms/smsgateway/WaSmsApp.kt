@@ -23,19 +23,21 @@ class WaSmsApp : Application(), Configuration.Provider {
     lateinit var workerFactory: HiltWorkerFactory
 
     override fun onCreate() {
-        super.onCreate()
-
-        // Install crash reporter FIRST — before anything else can crash
+        // Install crash reporter BEFORE super.onCreate() — Hilt DI runs inside
+        // super.onCreate() and any DI failure would be uncatchable otherwise.
         installCrashReporter()
 
-        // SQLCipher native library must be loaded before any database access.
-        // Without this, Room + SupportOpenHelperFactory will crash with UnsatisfiedLinkError.
+        // SQLCipher native library must be loaded before Hilt builds the DI graph,
+        // because DatabaseModule creates SupportOpenHelperFactory which needs it.
         try {
             System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {
             // Log but don't crash — DatabaseModule will fall back to unencrypted DB
             android.util.Log.e("WaSmsApp", "Failed to load sqlcipher native library", e)
         }
+
+        // Hilt DI graph is built inside super.onCreate()
+        super.onCreate()
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
@@ -64,7 +66,14 @@ class WaSmsApp : Application(), Configuration.Provider {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
                 val crashLog = buildCrashLog(thread, throwable)
-                val crashFile = File(filesDir, CRASH_LOG_FILE)
+                // Use getFilesDir() with fallback — may be called before super.onCreate()
+                val dir = try {
+                    filesDir
+                } catch (e: Exception) {
+                    // Fallback: use data dir directly
+                    File(applicationInfo.dataDir, "files").also { it.mkdirs() }
+                }
+                val crashFile = File(dir, CRASH_LOG_FILE)
                 crashFile.writeText(crashLog)
                 android.util.Log.e("WaSmsApp", "FATAL: Crash log saved to ${crashFile.absolutePath}")
             } catch (e: Exception) {

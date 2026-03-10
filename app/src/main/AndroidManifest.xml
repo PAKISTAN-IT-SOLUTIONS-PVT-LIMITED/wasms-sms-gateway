@@ -116,7 +116,6 @@
             credentials are configured. With placeholder values, auto-init crashes
             the app on startup. Firebase will be initialized manually when ready.
         -->
-        <!-- Disable ALL Firebase auto-initialization with placeholder credentials -->
         <meta-data
             android:name="firebase_data_collection_default_enabled"
             android:value="false" />
@@ -129,6 +128,34 @@
         <meta-data
             android:name="firebase_messaging_auto_init_enabled"
             android:value="false" />
+
+        <!--
+            Remove Firebase ContentProviders entirely. These run BEFORE
+            Application.onCreate() and crash with placeholder google-services.json.
+            Even with auto-init disabled, the providers still initialize core
+            Firebase infrastructure which fails with invalid project credentials.
+            Re-enable these when real Firebase credentials are configured.
+        -->
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            android:exported="false"
+            tools:node="remove" />
+        <provider
+            android:name="com.google.android.gms.measurement.AppMeasurementInstallReferrerReceiver"
+            android:authorities="${applicationId}.firebasemeasurement"
+            android:exported="false"
+            tools:node="remove" />
+        <provider
+            android:name="com.google.android.gms.measurement.AppMeasurementContentProvider"
+            android:authorities="${applicationId}.measurement_init"
+            android:exported="false"
+            tools:node="remove" />
+        <provider
+            android:name="com.google.firebase.crashlytics.CrashlyticsInitProvider"
+            android:authorities="${applicationId}.crashlyticsinitprovider"
+            android:exported="false"
+            tools:node="remove" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher" />
