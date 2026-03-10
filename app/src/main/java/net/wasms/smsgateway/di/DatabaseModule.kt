@@ -34,25 +34,36 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideSupportOpenHelperFactory(@ApplicationContext context: Context): SupportOpenHelperFactory {
-        val passphrase = getOrCreatePassphrase(context)
-        return SupportOpenHelperFactory(passphrase)
+    fun provideSupportOpenHelperFactory(@ApplicationContext context: Context): SupportOpenHelperFactory? {
+        return try {
+            val passphrase = getOrCreatePassphrase(context)
+            SupportOpenHelperFactory(passphrase)
+        } catch (e: Exception) {
+            // SQLCipher native lib failed to load or Keystore issue
+            android.util.Log.e("DatabaseModule", "SQLCipher factory creation failed, using unencrypted DB", e)
+            null
+        }
     }
 
     @Provides
     @Singleton
     fun provideDatabase(
         @ApplicationContext context: Context,
-        supportFactory: SupportOpenHelperFactory
+        supportFactory: SupportOpenHelperFactory?
     ): WaSmsDatabase {
-        return Room.databaseBuilder(
+        val builder = Room.databaseBuilder(
             context,
             WaSmsDatabase::class.java,
             WaSmsDatabase.DATABASE_NAME
         )
-            .openHelperFactory(supportFactory)
-            .fallbackToDestructiveMigration()
-            .build()
+            .fallbackToDestructiveMigration(false)
+
+        // Use SQLCipher encryption if available, plain SQLite otherwise
+        if (supportFactory != null) {
+            builder.openHelperFactory(supportFactory)
+        }
+
+        return builder.build()
     }
 
     @Provides

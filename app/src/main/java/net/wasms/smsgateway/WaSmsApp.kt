@@ -18,6 +18,22 @@ class WaSmsApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
 
+        // Install a global uncaught exception handler to log crashes before the process dies
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            android.util.Log.e("WaSmsApp", "FATAL: Uncaught exception on ${thread.name}", throwable)
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
+
+        // SQLCipher native library must be loaded before any database access.
+        // Without this, Room + SupportOpenHelperFactory will crash with UnsatisfiedLinkError.
+        try {
+            System.loadLibrary("sqlcipher")
+        } catch (e: UnsatisfiedLinkError) {
+            // Log but don't crash — DatabaseModule will fall back to unencrypted DB
+            android.util.Log.e("WaSmsApp", "Failed to load sqlcipher native library", e)
+        }
+
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }

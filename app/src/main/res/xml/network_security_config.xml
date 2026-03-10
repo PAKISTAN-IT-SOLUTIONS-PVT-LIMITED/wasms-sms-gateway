@@ -15,15 +15,10 @@
         </trust-anchors>
     </debug-overrides>
 
-    <!-- Pin certificates for WaSMS API -->
-    <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">wasms.net</domain>
-        <pin-set expiration="2027-01-01">
-            <!-- SHA-256 pins will be populated during deployment -->
-            <!-- Primary pin -->
-            <pin digest="SHA-256">PLACEHOLDER_PRIMARY_PIN=</pin>
-            <!-- Backup pin -->
-            <pin digest="SHA-256">PLACEHOLDER_BACKUP_PIN=</pin>
-        </pin-set>
-    </domain-config>
+    <!--
+        Certificate pinning is handled by OkHttp CertificatePinner (in NetworkModule)
+        when BuildConfig.CERT_PINNING_ENABLED is true.
+        Placeholder pins in XML cause crashes on some Android versions,
+        so pinning is done at the HTTP client level instead.
+    -->
 </network-security-config>
