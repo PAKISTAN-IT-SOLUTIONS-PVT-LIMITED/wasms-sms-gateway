@@ -109,7 +109,7 @@ class TokenManager @Inject constructor(
             Instant.parse(response.tokens.expiresAt)
         } catch (_: Exception) {
             // Fallback: 24 hours from now
-            Clock.System.now().plus(24 * 60 * 60L.seconds)
+            Clock.System.now().plus((24 * 60 * 60).seconds)
         }
 
         prefs.edit()
@@ -133,7 +133,7 @@ class TokenManager @Inject constructor(
         val expiry = try {
             Instant.parse(response.expiresAt)
         } catch (_: Exception) {
-            Clock.System.now().plus(24 * 60 * 60L.seconds)
+            Clock.System.now().plus((24 * 60 * 60).seconds)
         }
 
         prefs.edit()
