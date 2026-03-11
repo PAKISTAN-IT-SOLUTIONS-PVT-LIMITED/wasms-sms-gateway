@@ -119,12 +119,5 @@
         </provider>
 
         <!-- Firebase fully removed from build — no meta-data needed -->
-
-        <!-- Crash Report Activity (same process — separate process would
-             create another WaSmsApp instance that may also crash) -->
-        <activity
-            android:name=".presentation.CrashReportActivity"
-            android:exported="false"
-            android:theme="@style/Theme.WaSMS" />
     </application>
 </manifest>
