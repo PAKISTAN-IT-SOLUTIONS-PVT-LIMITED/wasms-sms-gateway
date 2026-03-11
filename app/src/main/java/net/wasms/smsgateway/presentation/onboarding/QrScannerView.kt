@@ -43,9 +43,17 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "QrScannerView"
 
+/**
+ * QR Scanner composable with proper scan locking.
+ *
+ * Uses AtomicBoolean for thread-safe scan locking (camera analyzer runs
+ * on a background thread). Once a code is detected, scanning is locked
+ * until explicitly reset via [resetScan] callback.
+ */
 @Composable
 fun QrScannerView(
     onQrCodeScanned: (String) -> Unit,
@@ -112,13 +120,9 @@ private fun CameraPreviewWithAnalysis(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    var hasScanned by remember { mutableStateOf(false) }
+    // AtomicBoolean for thread-safe scan locking (analyzer runs on background thread)
+    val scanLock = remember { AtomicBoolean(false) }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-
-    // Reset scan lock when re-enabled (e.g., after a failed registration)
-    if (scanEnabled && hasScanned) {
-        hasScanned = false
-    }
 
     DisposableEffect(Unit) {
         onDispose { cameraExecutor.shutdown() }
@@ -146,8 +150,7 @@ private fun CameraPreviewWithAnalysis(
                     .build()
 
                 imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                    processImage(imageProxy, scanner, hasScanned) { rawValue ->
-                        hasScanned = true
+                    processImage(imageProxy, scanner, scanLock, scanEnabled) { rawValue ->
                         onQrCodeScanned(rawValue)
                     }
                 }
@@ -177,10 +180,12 @@ private fun CameraPreviewWithAnalysis(
 private fun processImage(
     imageProxy: ImageProxy,
     scanner: com.google.mlkit.vision.barcode.BarcodeScanner,
-    alreadyScanned: Boolean,
+    scanLock: AtomicBoolean,
+    scanEnabled: Boolean,
     onDetected: (String) -> Unit,
 ) {
-    if (alreadyScanned) {
+    // Skip if scanning is disabled (registration in progress) or already locked
+    if (!scanEnabled || scanLock.get()) {
         imageProxy.close()
         return
     }
@@ -197,8 +202,13 @@ private fun processImage(
         .addOnSuccessListener { barcodes ->
             for (barcode in barcodes) {
                 val rawValue = barcode.rawValue
-                if (rawValue != null && !alreadyScanned) {
-                    onDetected(rawValue)
+                if (rawValue != null && !scanLock.get() && scanEnabled) {
+                    // Lock scanning — will only fire once
+                    // The lock is permanent: user must tap "Scan Again" to retry
+                    if (scanLock.compareAndSet(false, true)) {
+                        Log.d(TAG, "QR code detected, scan locked")
+                        onDetected(rawValue)
+                    }
                     break
                 }
             }

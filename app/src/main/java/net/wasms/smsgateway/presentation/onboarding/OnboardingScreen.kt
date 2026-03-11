@@ -327,6 +327,12 @@ private fun OnboardingInstructionCard(
 // Step 2: QR Scanner (placeholder) + Manual Token Entry
 // =============================================================================
 
+/**
+ * Scanner step with 3 modes:
+ * - SCANNING: Camera active, scanning for QR codes
+ * - REGISTERING: Loading card shown, camera paused
+ * - ERROR: Error card with "Scan Again" / "Enter Manually" buttons (camera OFF)
+ */
 @Composable
 private fun ScannerStep(
     isRegistering: Boolean,
@@ -335,6 +341,16 @@ private fun ScannerStep(
 ) {
     var manualCode by rememberSaveable { mutableStateOf("") }
     var showManualEntry by rememberSaveable { mutableStateOf(false) }
+    // Track whether we should show the scanner. After an error, hide it
+    // until user explicitly taps "Scan Again"
+    var scannerActive by rememberSaveable { mutableStateOf(true) }
+
+    // When an error occurs, deactivate scanner to prevent re-scan loop
+    LaunchedEffect(error) {
+        if (error != null && !isRegistering) {
+            scannerActive = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -343,50 +359,20 @@ private fun ScannerStep(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = if (showManualEntry) "Enter Code" else "Scan QR Code",
+            text = when {
+                showManualEntry -> "Enter Code"
+                isRegistering -> "Connecting..."
+                error != null && !scannerActive -> "Registration Failed"
+                else -> "Scan QR Code"
+            },
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // Show error message if registration failed
-        if (error != null && !isRegistering) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                ) {
-                    Text(
-                        text = "Registration Failed",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = error,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Please try scanning or entering the code again.",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
+        // --- REGISTERING STATE ---
         if (isRegistering) {
-            Spacer(modifier = Modifier.height(12.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -425,11 +411,68 @@ private fun ScannerStep(
                     trackColor = MaterialTheme.colorScheme.primaryContainer,
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        if (!showManualEntry) {
-            // QR Scanner mode
+        // --- ERROR STATE (not registering) ---
+        if (error != null && !isRegistering) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                ) {
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Generate a new QR code on your dashboard and try again.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Action buttons after error
+            Button(
+                onClick = {
+                    scannerActive = true
+                    showManualEntry = false
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.CameraAlt,
+                    contentDescription = null,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Scan Again")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = {
+                    showManualEntry = true
+                    scannerActive = false
+                },
+            ) {
+                Text("Enter code manually instead")
+            }
+        }
+
+        // --- SCANNER MODE (no error, not registering) ---
+        if (!showManualEntry && !isRegistering && (error == null || scannerActive)) {
             Text(
                 text = "Point your camera at the QR code shown on your computer screen",
                 style = MaterialTheme.typography.bodySmall,
@@ -439,24 +482,31 @@ private fun ScannerStep(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            QrScannerView(
-                onQrCodeScanned = { code -> onCodeSubmit(code) },
-                enabled = !isRegistering,
-            )
+            if (scannerActive) {
+                QrScannerView(
+                    onQrCodeScanned = { code -> onCodeSubmit(code) },
+                    enabled = true,
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             TextButton(
-                onClick = { showManualEntry = true },
+                onClick = {
+                    showManualEntry = true
+                    scannerActive = false
+                },
             ) {
                 Text("Enter code manually instead")
             }
-        } else {
-            // Manual entry mode — camera is completely hidden
-            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // --- MANUAL ENTRY MODE ---
+        if (showManualEntry && !isRegistering && (error == null || !scannerActive)) {
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Enter the code shown on your WaSMS dashboard\n(Messaging \u2192 SMS Devices \u2192 Generate QR Code)",
+                text = "Enter the 8-character code shown on your WaSMS dashboard",
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -466,12 +516,11 @@ private fun ScannerStep(
 
             OutlinedTextField(
                 value = manualCode,
-                onValueChange = { manualCode = it },
+                onValueChange = { manualCode = it.uppercase().take(20) },
                 label = { Text("Registration Code") },
                 placeholder = { Text("e.g., ABCD1234") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isRegistering,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -481,25 +530,18 @@ private fun ScannerStep(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
-                enabled = manualCode.isNotBlank() && !isRegistering,
+                enabled = manualCode.isNotBlank(),
             ) {
-                if (isRegistering) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Connecting...")
-                } else {
-                    Text("Connect Device")
-                }
+                Text("Connect Device")
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             TextButton(
-                onClick = { showManualEntry = false },
+                onClick = {
+                    showManualEntry = false
+                    scannerActive = true
+                },
             ) {
                 Text("Use QR scanner instead")
             }
