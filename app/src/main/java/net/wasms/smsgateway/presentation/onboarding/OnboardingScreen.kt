@@ -10,7 +10,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,15 +23,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Rocket
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -181,34 +188,72 @@ private fun WelcomeStep(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
+        Spacer(modifier = Modifier.height(16.dp))
+
         Icon(
             imageVector = Icons.Filled.QrCodeScanner,
             contentDescription = null,
-            modifier = Modifier.size(80.dp),
+            modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary,
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Connect Your Device",
+            text = "Link Your Phone",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Scan the QR code from your WaSMS web dashboard to link this phone as an SMS gateway device.",
-            style = MaterialTheme.typography.bodyLarge,
+            text = "Follow these steps to connect this phone to your WaSMS account:",
+            style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Step-by-step instructions for non-technical users
+        OnboardingInstructionCard(
+            stepNumber = 1,
+            icon = Icons.Filled.Language,
+            title = "Open WaSMS on your computer",
+            description = "Go to wasms.net and log in to your account. If you don't have an account, sign up first.",
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OnboardingInstructionCard(
+            stepNumber = 2,
+            icon = Icons.Filled.Settings,
+            title = "Go to Settings \u2192 Gateways",
+            description = "In your WaSMS dashboard, click \"Settings\" in the left menu, then click \"Gateways\".",
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OnboardingInstructionCard(
+            stepNumber = 3,
+            icon = Icons.Filled.PhoneAndroid,
+            title = "Tap \"Add Gateway\" and choose SMS",
+            description = "Click the \"Add Gateway\" button, select \"SMS Gateway\", and a QR code will appear on screen.",
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OnboardingInstructionCard(
+            stepNumber = 4,
+            icon = Icons.Filled.QrCodeScanner,
+            title = "Scan the QR code with this app",
+            description = "Tap the button below to open the camera and point it at the QR code on your computer screen.",
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = onScanQrClick,
@@ -222,6 +267,57 @@ private fun WelcomeStep(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text("Scan QR Code")
+        }
+    }
+}
+
+@Composable
+private fun OnboardingInstructionCard(
+    stepNumber: Int,
+    icon: ImageVector,
+    title: String,
+    description: String,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stepNumber.toString(),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -248,6 +344,15 @@ private fun ScannerStep(
             text = "Scan QR Code",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Point your camera at the QR code shown on your computer screen",
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
