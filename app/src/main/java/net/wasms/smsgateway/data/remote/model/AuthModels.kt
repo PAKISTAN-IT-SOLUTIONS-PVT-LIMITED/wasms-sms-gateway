@@ -9,17 +9,14 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class RegistrationRequest(
-    @SerialName("grant_type")
-    val grantType: String,
+    @SerialName("device_code")
+    val deviceCode: String? = null,
 
-    @SerialName("code")
-    val code: String? = null,
+    @SerialName("device_password")
+    val devicePassword: String? = null,
 
-    @SerialName("email")
-    val email: String? = null,
-
-    @SerialName("password")
-    val password: String? = null,
+    @SerialName("team_id")
+    val teamId: String,
 
     @SerialName("device_name")
     val deviceName: String,

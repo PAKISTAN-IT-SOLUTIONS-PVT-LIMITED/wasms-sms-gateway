@@ -50,6 +50,7 @@ private const val TAG = "QrScannerView"
 fun QrScannerView(
     onQrCodeScanned: (String) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     val context = LocalContext.current
     var hasCameraPermission by remember {
@@ -69,6 +70,7 @@ fun QrScannerView(
         CameraPreviewWithAnalysis(
             onQrCodeScanned = onQrCodeScanned,
             modifier = modifier,
+            scanEnabled = enabled,
         )
     } else {
         Box(
@@ -106,11 +108,17 @@ fun QrScannerView(
 private fun CameraPreviewWithAnalysis(
     onQrCodeScanned: (String) -> Unit,
     modifier: Modifier = Modifier,
+    scanEnabled: Boolean = true,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var hasScanned by remember { mutableStateOf(false) }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    // Reset scan lock when re-enabled (e.g., after a failed registration)
+    if (scanEnabled && hasScanned) {
+        hasScanned = false
+    }
 
     DisposableEffect(Unit) {
         onDispose { cameraExecutor.shutdown() }

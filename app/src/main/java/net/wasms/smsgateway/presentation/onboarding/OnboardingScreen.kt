@@ -128,6 +128,7 @@ fun OnboardingScreen(
                     )
                     OnboardingStep.SCANNER -> ScannerStep(
                         isRegistering = uiState.isRegistering,
+                        error = uiState.error,
                         onCodeSubmit = viewModel::registerDevice,
                     )
                     OnboardingStep.PERMISSIONS -> PermissionsStep(
@@ -230,25 +231,25 @@ private fun WelcomeStep(
 
         OnboardingInstructionCard(
             stepNumber = 2,
-            icon = Icons.Filled.Settings,
-            title = "Go to Settings \u2192 Gateways",
-            description = "In your WaSMS dashboard, click \"Settings\" in the left menu, then click \"Gateways\".",
+            icon = Icons.Filled.PhoneAndroid,
+            title = "Go to Messaging \u2192 SMS Devices",
+            description = "In your WaSMS dashboard, click \"SMS Devices\" under the Messaging section in the left menu.",
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         OnboardingInstructionCard(
             stepNumber = 3,
-            icon = Icons.Filled.PhoneAndroid,
-            title = "Tap \"Add Gateway\" and choose SMS",
-            description = "Click the \"Add Gateway\" button, select \"SMS Gateway\", and a QR code will appear on screen.",
+            icon = Icons.Filled.QrCodeScanner,
+            title = "Tap \"Generate QR Code\"",
+            description = "Click the green \"Generate QR Code\" button at the top. A QR code and registration code will appear.",
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         OnboardingInstructionCard(
             stepNumber = 4,
-            icon = Icons.Filled.QrCodeScanner,
+            icon = Icons.Filled.CameraAlt,
             title = "Scan the QR code with this app",
             description = "Tap the button below to open the camera and point it at the QR code on your computer screen.",
         )
@@ -329,6 +330,7 @@ private fun OnboardingInstructionCard(
 @Composable
 private fun ScannerStep(
     isRegistering: Boolean,
+    error: String?,
     onCodeSubmit: (String) -> Unit,
 ) {
     var manualCode by rememberSaveable { mutableStateOf("") }
@@ -358,13 +360,53 @@ private fun ScannerStep(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Live QR scanner with CameraX + ML Kit
+        // Scanner re-enables after error so user can scan again
         QrScannerView(
             onQrCodeScanned = { code -> onCodeSubmit(code) },
+            enabled = !isRegistering,
         )
+
+        // Show error message if registration failed
+        if (error != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                ),
+            ) {
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(12.dp),
+                )
+            }
+        }
+
+        if (isRegistering) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Connecting...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Manual entry fallback (Agent 3: "If camera fails, show manual token entry")
+        // Manual entry fallback
         TextButton(
             onClick = { showManualEntry = !showManualEntry },
         ) {
@@ -380,11 +422,20 @@ private fun ScannerStep(
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
 
+                Text(
+                    text = "Enter the code shown on your WaSMS dashboard (Settings \u2192 SMS Devices \u2192 Generate Registration Code)",
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 OutlinedTextField(
                     value = manualCode,
                     onValueChange = { manualCode = it },
                     label = { Text("Registration Code") },
-                    placeholder = { Text("e.g., ABC123-XYZ789") },
+                    placeholder = { Text("e.g., ABCD1234") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isRegistering,
@@ -404,7 +455,7 @@ private fun ScannerStep(
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Registering...")
+                        Text("Connecting...")
                     } else {
                         Text("Connect Device")
                     }

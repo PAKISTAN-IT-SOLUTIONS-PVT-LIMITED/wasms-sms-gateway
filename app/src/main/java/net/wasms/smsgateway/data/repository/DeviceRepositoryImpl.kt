@@ -29,6 +29,9 @@ import net.wasms.smsgateway.domain.model.DeviceHealth
 import net.wasms.smsgateway.domain.model.DeviceStatus
 import net.wasms.smsgateway.domain.model.SimCard
 import net.wasms.smsgateway.domain.repository.DeviceRepository
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -45,11 +48,17 @@ class DeviceRepositoryImpl @Inject constructor(
     /**
      * Registers the device with the WaSMS server using a QR registration code.
      * On success, stores the OAuth token and device metadata.
+     *
+     * The registrationCode can be:
+     * - A JSON string from QR scan: {"code":"ABC123","team_id":"uuid-here"}
+     * - A plain code from manual entry: "ABC123" (requires team_id in the code format "CODE:TEAM_ID")
      */
     override suspend fun registerDevice(registrationCode: String, deviceName: String): AuthToken {
+        val (code, teamId) = parseRegistrationInput(registrationCode)
+
         val request = RegistrationRequest(
-            grantType = "device_code",
-            code = registrationCode,
+            deviceCode = code,
+            teamId = teamId,
             deviceName = deviceName,
             deviceUid = devicePrefs.deviceUid,
             deviceMeta = DeviceMetaDto(
@@ -311,6 +320,43 @@ class DeviceRepositoryImpl @Inject constructor(
     }
 
     // --- Private helpers ---
+
+    /**
+     * Parses the registration input which can be:
+     * 1. JSON from QR: {"code":"ABC123","team_id":"uuid"}
+     * 2. Colon-separated from manual entry: "ABC123:uuid"
+     * 3. Plain code (will fail without team_id — shows helpful error)
+     */
+    private fun parseRegistrationInput(input: String): Pair<String, String> {
+        val trimmed = input.trim()
+
+        // Try JSON first (QR code format)
+        if (trimmed.startsWith("{")) {
+            try {
+                val json = Json.parseToJsonElement(trimmed).jsonObject
+                val code = json["code"]?.jsonPrimitive?.content
+                    ?: throw IllegalArgumentException("QR code missing 'code' field")
+                val teamId = json["team_id"]?.jsonPrimitive?.content
+                    ?: throw IllegalArgumentException("QR code missing 'team_id' field")
+                return Pair(code, teamId)
+            } catch (e: kotlinx.serialization.SerializationException) {
+                throw IllegalArgumentException("Invalid QR code format. Please generate a new code from your WaSMS dashboard.")
+            }
+        }
+
+        // Try colon-separated format: CODE:TEAM_ID
+        if (trimmed.contains(":")) {
+            val parts = trimmed.split(":", limit = 2)
+            if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
+                return Pair(parts[0].trim(), parts[1].trim())
+            }
+        }
+
+        // Plain code without team_id — cannot proceed
+        throw IllegalArgumentException(
+            "Invalid code format. Please scan the QR code from your WaSMS dashboard (Settings → SMS Devices → Generate Registration Code)."
+        )
+    }
 
     private fun getAppVersion(): String {
         return try {
