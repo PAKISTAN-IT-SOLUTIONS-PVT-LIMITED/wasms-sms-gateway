@@ -7,6 +7,7 @@ import androidx.security.crypto.MasterKeys
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import net.wasms.smsgateway.data.remote.model.AuthTokenResponse
+import net.wasms.smsgateway.data.remote.model.RegistrationResponse
 import net.wasms.smsgateway.domain.model.AuthToken
 import timber.log.Timber
 import javax.inject.Inject
@@ -101,24 +102,49 @@ class TokenManager @Inject constructor(
     // --- Methods ---
 
     /**
-     * Stores all token fields from the API response.
-     * Calculates [expiresAt] as now + expiresIn seconds.
+     * Stores tokens from a registration response (device + tokens).
+     */
+    fun saveRegistration(response: RegistrationResponse) {
+        val expiry = try {
+            Instant.parse(response.tokens.expiresAt)
+        } catch (_: Exception) {
+            // Fallback: 24 hours from now
+            Clock.System.now().plus(24 * 60 * 60L.seconds)
+        }
+
+        prefs.edit()
+            .putString(KEY_ACCESS_TOKEN, response.tokens.accessToken)
+            .putString(KEY_REFRESH_TOKEN, response.tokens.refreshToken)
+            .putString(KEY_TOKEN_TYPE, "Bearer")
+            .putLong(KEY_EXPIRES_AT, expiry.toEpochMilliseconds())
+            .putString(KEY_SCOPES, response.tokens.scopes.joinToString(","))
+            .putString(KEY_DEVICE_ID, response.device.id)
+            .putString(KEY_TEAM_ID, response.device.teamId)
+            .apply()
+
+        Timber.d("Registration saved. Device: %s, Team: %s, Expires: %s",
+            response.device.id, response.device.teamId, expiry)
+    }
+
+    /**
+     * Stores tokens from a token refresh response.
      */
     fun saveToken(response: AuthTokenResponse) {
-        val now = Clock.System.now()
-        val expiry = now.plus(response.expiresIn.seconds)
+        val expiry = try {
+            Instant.parse(response.expiresAt)
+        } catch (_: Exception) {
+            Clock.System.now().plus(24 * 60 * 60L.seconds)
+        }
 
         prefs.edit()
             .putString(KEY_ACCESS_TOKEN, response.accessToken)
             .putString(KEY_REFRESH_TOKEN, response.refreshToken)
-            .putString(KEY_TOKEN_TYPE, response.tokenType)
+            .putString(KEY_TOKEN_TYPE, "Bearer")
             .putLong(KEY_EXPIRES_AT, expiry.toEpochMilliseconds())
             .putString(KEY_SCOPES, response.scopes.joinToString(","))
-            .putString(KEY_DEVICE_ID, response.deviceId)
-            .putString(KEY_TEAM_ID, response.userId)
             .apply()
 
-        Timber.d("Token saved. Expires at: %s, Device: %s", expiry, response.deviceId)
+        Timber.d("Token refreshed. Expires at: %s", expiry)
     }
 
     /**

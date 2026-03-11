@@ -4,6 +4,7 @@ import net.wasms.smsgateway.data.remote.model.AckRequest
 import net.wasms.smsgateway.data.remote.model.AckResponse
 import net.wasms.smsgateway.data.remote.model.ApiResponse
 import net.wasms.smsgateway.data.remote.model.AuthTokenResponse
+import net.wasms.smsgateway.data.remote.model.RegistrationResponse
 import net.wasms.smsgateway.data.remote.model.AutoReplyResponse
 import net.wasms.smsgateway.data.remote.model.BulkDeliveryReportRequest
 import net.wasms.smsgateway.data.remote.model.BulkDeliveryReportResponse
@@ -69,7 +70,7 @@ interface DeviceApi {
     @POST("device/register")
     suspend fun register(
         @Body request: RegistrationRequest
-    ): Response<ApiResponse<AuthTokenResponse>>
+    ): Response<ApiResponse<RegistrationResponse>>
 
     /**
      * Refresh the access token using a refresh token.

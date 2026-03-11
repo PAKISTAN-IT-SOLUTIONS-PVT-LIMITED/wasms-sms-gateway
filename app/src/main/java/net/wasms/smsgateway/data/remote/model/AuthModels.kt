@@ -66,28 +66,68 @@ data class RefreshTokenRequest(
 )
 
 /**
- * OAuth token response returned by both register and token/refresh endpoints.
- * Wrapped in a "data" envelope by the server.
+ * Registration response from POST /device/register.
+ * Server returns: {"data": {"device": {...}, "tokens": {...}}}
  */
 @Serializable
-data class AuthTokenResponse(
-    @SerialName("device_id")
-    val deviceId: String? = null,
+data class RegistrationResponse(
+    @SerialName("device")
+    val device: RegisteredDeviceDto,
 
-    @SerialName("user_id")
-    val userId: String? = null,
+    @SerialName("tokens")
+    val tokens: TokensDto
+)
 
+@Serializable
+data class RegisteredDeviceDto(
+    @SerialName("id")
+    val id: String,
+
+    @SerialName("team_id")
+    val teamId: String,
+
+    @SerialName("device_name")
+    val deviceName: String,
+
+    @SerialName("status")
+    val status: String = "active",
+)
+
+@Serializable
+data class TokensDto(
     @SerialName("access_token")
     val accessToken: String,
 
     @SerialName("refresh_token")
     val refreshToken: String,
 
-    @SerialName("token_type")
-    val tokenType: String,
+    @SerialName("token_id")
+    val tokenId: String? = null,
 
-    @SerialName("expires_in")
-    val expiresIn: Long,
+    @SerialName("expires_at")
+    val expiresAt: String,
+
+    @SerialName("scopes")
+    val scopes: List<String> = emptyList()
+)
+
+/**
+ * Token refresh response from POST /device/token/refresh.
+ * Server returns: {"data": {"access_token": "...", ...}}
+ */
+@Serializable
+data class AuthTokenResponse(
+    @SerialName("access_token")
+    val accessToken: String,
+
+    @SerialName("refresh_token")
+    val refreshToken: String,
+
+    @SerialName("token_id")
+    val tokenId: String? = null,
+
+    @SerialName("expires_at")
+    val expiresAt: String,
 
     @SerialName("scopes")
     val scopes: List<String> = emptyList()

@@ -71,14 +71,25 @@ class DeviceRepositoryImpl @Inject constructor(
         )
 
         val response = api.register(request)
-        val tokenData = response.body()?.data
+
+        if (!response.isSuccessful) {
+            val errorBody = response.errorBody()?.string() ?: "Unknown error"
+            Timber.e("Registration failed: HTTP %d — %s", response.code(), errorBody)
+            // Try to extract the "message" field from JSON error
+            val message = try {
+                Json.parseToJsonElement(errorBody).jsonObject["message"]?.jsonPrimitive?.content
+            } catch (_: Exception) { null }
+            throw IllegalStateException(message ?: "Registration failed (${response.code()})")
+        }
+
+        val regData = response.body()?.data
             ?: throw IllegalStateException("Registration failed: empty response")
 
-        tokenManager.saveToken(tokenData)
+        tokenManager.saveRegistration(regData)
         devicePrefs.deviceName = deviceName
         devicePrefs.isOnboardingComplete = true
 
-        Timber.i("Device registered successfully. Device ID: %s", tokenData.deviceId)
+        Timber.i("Device registered successfully. Device ID: %s", regData.device.id)
 
         return tokenManager.getToken()
             ?: throw IllegalStateException("Token was saved but could not be read back")

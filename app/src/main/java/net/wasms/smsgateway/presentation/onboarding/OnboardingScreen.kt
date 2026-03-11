@@ -343,32 +343,15 @@ private fun ScannerStep(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Scan QR Code",
+            text = if (showManualEntry) "Enter Code" else "Scan QR Code",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        Text(
-            text = "Point your camera at the QR code shown on your computer screen",
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Live QR scanner with CameraX + ML Kit
-        // Scanner re-enables after error so user can scan again
-        QrScannerView(
-            onQrCodeScanned = { code -> onCodeSubmit(code) },
-            enabled = !isRegistering,
-        )
-
         // Show error message if registration failed
         if (error != null) {
-            Spacer(modifier = Modifier.height(8.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -382,6 +365,7 @@ private fun ScannerStep(
                     modifier = Modifier.padding(12.dp),
                 )
             }
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         if (isRegistering) {
@@ -402,64 +386,83 @@ private fun ScannerStep(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Manual entry fallback
-        TextButton(
-            onClick = { showManualEntry = !showManualEntry },
-        ) {
+        if (!showManualEntry) {
+            // QR Scanner mode
             Text(
-                text = if (showManualEntry) "Hide manual entry" else "Enter code manually instead",
+                text = "Point your camera at the QR code shown on your computer screen",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
 
-        AnimatedVisibility(visible = showManualEntry) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Spacer(modifier = Modifier.height(16.dp))
+
+            QrScannerView(
+                onQrCodeScanned = { code -> onCodeSubmit(code) },
+                enabled = !isRegistering,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(
+                onClick = { showManualEntry = true },
             ) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Text("Enter code manually instead")
+            }
+        } else {
+            // Manual entry mode — camera is completely hidden
+            Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "Enter the code shown on your WaSMS dashboard (Settings \u2192 SMS Devices \u2192 Generate Registration Code)",
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Text(
+                text = "Enter the code shown on your WaSMS dashboard\n(Messaging \u2192 SMS Devices \u2192 Generate QR Code)",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = manualCode,
-                    onValueChange = { manualCode = it },
-                    label = { Text("Registration Code") },
-                    placeholder = { Text("e.g., ABCD1234") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isRegistering,
-                )
+            OutlinedTextField(
+                value = manualCode,
+                onValueChange = { manualCode = it },
+                label = { Text("Registration Code") },
+                placeholder = { Text("e.g., ABCD1234") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isRegistering,
+            )
 
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                Button(
-                    onClick = { onCodeSubmit(manualCode.trim()) },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = manualCode.isNotBlank() && !isRegistering,
-                ) {
-                    if (isRegistering) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Connecting...")
-                    } else {
-                        Text("Connect Device")
-                    }
+            Button(
+                onClick = { onCodeSubmit(manualCode.trim()) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                enabled = manualCode.isNotBlank() && !isRegistering,
+            ) {
+                if (isRegistering) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Connecting...")
+                } else {
+                    Text("Connect Device")
                 }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = { showManualEntry = false },
+            ) {
+                Text("Use QR scanner instead")
             }
         }
     }
