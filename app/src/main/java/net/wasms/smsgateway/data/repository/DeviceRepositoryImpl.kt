@@ -338,7 +338,13 @@ class DeviceRepositoryImpl @Inject constructor(
      * 2. Colon-separated from manual entry: "ABC123:uuid"
      * 3. Plain code (will fail without team_id — shows helpful error)
      */
-    private fun parseRegistrationInput(input: String): Pair<String, String> {
+    /**
+     * Parses the registration input which can be:
+     * 1. JSON from QR: {"code":"ABC123","team_id":"uuid"} → returns (code, teamId)
+     * 2. Colon-separated: "ABC123:uuid" → returns (code, teamId)
+     * 3. Plain code: "ABC123" → returns (code, null) — server resolves team_id from cache
+     */
+    private fun parseRegistrationInput(input: String): Pair<String, String?> {
         val trimmed = input.trim()
 
         // Try JSON first (QR code format)
@@ -348,7 +354,6 @@ class DeviceRepositoryImpl @Inject constructor(
                 val code = json["code"]?.jsonPrimitive?.content
                     ?: throw IllegalArgumentException("QR code missing 'code' field")
                 val teamId = json["team_id"]?.jsonPrimitive?.content
-                    ?: throw IllegalArgumentException("QR code missing 'team_id' field")
                 return Pair(code, teamId)
             } catch (e: kotlinx.serialization.SerializationException) {
                 throw IllegalArgumentException("Invalid QR code format. Please generate a new code from your WaSMS dashboard.")
@@ -363,10 +368,12 @@ class DeviceRepositoryImpl @Inject constructor(
             }
         }
 
-        // Plain code without team_id — cannot proceed
-        throw IllegalArgumentException(
-            "Invalid code format. Please scan the QR code from your WaSMS dashboard (Settings → SMS Devices → Generate Registration Code)."
-        )
+        // Plain code — server will look up team_id from the registration cache
+        if (trimmed.isNotBlank()) {
+            return Pair(trimmed, null)
+        }
+
+        throw IllegalArgumentException("Please enter a registration code.")
     }
 
     private fun getAppVersion(): String {

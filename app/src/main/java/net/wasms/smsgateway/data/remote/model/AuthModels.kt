@@ -16,7 +16,7 @@ data class RegistrationRequest(
     val devicePassword: String? = null,
 
     @SerialName("team_id")
-    val teamId: String,
+    val teamId: String? = null,
 
     @SerialName("device_name")
     val deviceName: String,
