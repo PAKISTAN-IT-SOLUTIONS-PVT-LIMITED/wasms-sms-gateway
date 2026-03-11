@@ -27,11 +27,13 @@ jobs:
         run: cp app/google-services.json.example app/google-services.json
 
       - name: Decode release keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/release.jks
+        run: |
+          mkdir -p keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/release.jks
 
       - name: Build release APK
         env:
-          KEYSTORE_PATH: keystore/release.jks
+          KEYSTORE_PATH: ${{ github.workspace }}/keystore/release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: wasms
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
