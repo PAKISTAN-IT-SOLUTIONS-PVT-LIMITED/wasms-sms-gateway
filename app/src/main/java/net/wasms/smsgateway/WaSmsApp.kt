@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
@@ -22,70 +23,103 @@ class WaSmsApp : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    /** Set to true if Hilt initialization failed — Activities should check this. */
+    var hiltFailed = false
+        private set
+
     override fun onCreate() {
-        // Install crash reporter BEFORE super.onCreate() — Hilt DI runs inside
-        // super.onCreate() and any DI failure would be uncatchable otherwise.
+        Log.d(TAG, "BOOT STEP 1/6: Installing crash reporter")
         installCrashReporter()
 
-        // SQLCipher native library must be loaded before Hilt builds the DI graph,
-        // because DatabaseModule creates SupportOpenHelperFactory which needs it.
+        Log.d(TAG, "BOOT STEP 2/6: Loading SQLCipher native library")
         try {
             System.loadLibrary("sqlcipher")
+            Log.d(TAG, "BOOT STEP 2/6: SQLCipher loaded OK")
         } catch (e: UnsatisfiedLinkError) {
-            // Log but don't crash — DatabaseModule will fall back to unencrypted DB
-            android.util.Log.e("WaSmsApp", "Failed to load sqlcipher native library", e)
+            Log.e(TAG, "BOOT STEP 2/6: SQLCipher FAILED (will use unencrypted DB)", e)
         }
 
-        // Hilt DI graph is built inside super.onCreate()
-        super.onCreate()
+        Log.d(TAG, "BOOT STEP 3/6: Calling super.onCreate() (Hilt DI)")
+        try {
+            super.onCreate()
+            Log.d(TAG, "BOOT STEP 3/6: Hilt DI initialized OK")
+        } catch (e: Exception) {
+            Log.e(TAG, "BOOT STEP 3/6: FATAL — Hilt DI FAILED", e)
+            hiltFailed = true
+            saveCrashLog(Thread.currentThread(), e)
+            // Don't throw — let CrashReportActivity show the error
+            return
+        }
 
+        Log.d(TAG, "BOOT STEP 4/6: Planting Timber")
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
 
-        createNotificationChannels()
+        Log.d(TAG, "BOOT STEP 5/6: Creating notification channels")
+        try {
+            createNotificationChannels()
+        } catch (e: Exception) {
+            Log.e(TAG, "BOOT STEP 5/6: Notification channels FAILED", e)
+        }
+
+        Log.d(TAG, "BOOT STEP 6/6: onCreate() COMPLETE — app started successfully")
     }
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .setMinimumLoggingLevel(
-                if (BuildConfig.DEBUG) android.util.Log.DEBUG
-                else android.util.Log.INFO
+                if (BuildConfig.DEBUG) Log.DEBUG
+                else Log.INFO
             )
             .build()
 
-    /**
-     * Installs a global uncaught exception handler that:
-     * 1. Captures the full stack trace + device info
-     * 2. Saves to internal storage as crash_log.txt
-     * 3. Delegates to the default handler (so the system still terminates properly)
-     */
     private fun installCrashReporter() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            try {
-                val crashLog = buildCrashLog(thread, throwable)
-                // Use getFilesDir() with fallback — may be called before super.onCreate()
-                val dir = try {
-                    filesDir
-                } catch (e: Exception) {
-                    // Fallback: use data dir directly
-                    File(applicationInfo.dataDir, "files").also { it.mkdirs() }
-                }
-                val crashFile = File(dir, CRASH_LOG_FILE)
-                crashFile.writeText(crashLog)
-                android.util.Log.e("WaSmsApp", "FATAL: Crash log saved to ${crashFile.absolutePath}")
-            } catch (e: Exception) {
-                android.util.Log.e("WaSmsApp", "Failed to write crash log", e)
-            }
+            saveCrashLog(thread, throwable)
             defaultHandler?.uncaughtException(thread, throwable)
         }
     }
 
     /**
-     * Builds a detailed crash log string with device info, timestamp, and full stack trace.
+     * Saves crash info to file AND logcat so it's always accessible.
      */
+    private fun saveCrashLog(thread: Thread, throwable: Throwable) {
+        try {
+            val crashLog = buildCrashLog(thread, throwable)
+            // Always log to logcat (visible via logcat viewer apps)
+            Log.e(TAG, "========== CRASH REPORT START ==========")
+            crashLog.lines().forEach { line -> Log.e(TAG, line) }
+            Log.e(TAG, "========== CRASH REPORT END ==========")
+
+            // Write to internal files dir
+            val dir = try {
+                filesDir
+            } catch (e: Exception) {
+                File(applicationInfo.dataDir, "files").also { it.mkdirs() }
+            }
+            val crashFile = File(dir, CRASH_LOG_FILE)
+            crashFile.writeText(crashLog)
+            Log.e(TAG, "Crash log saved to: ${crashFile.absolutePath}")
+
+            // Also write to external files dir (user can access via file manager)
+            try {
+                val extDir = getExternalFilesDir(null)
+                if (extDir != null) {
+                    val extCrashFile = File(extDir, CRASH_LOG_FILE)
+                    extCrashFile.writeText(crashLog)
+                    Log.e(TAG, "Crash log also saved to: ${extCrashFile.absolutePath}")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not write external crash log", e)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to write crash log entirely", e)
+        }
+    }
+
     private fun buildCrashLog(thread: Thread, throwable: Throwable): String {
         val sw = StringWriter()
         val pw = PrintWriter(sw)
@@ -163,6 +197,7 @@ class WaSmsApp : Application(), Configuration.Provider {
     }
 
     companion object {
+        private const val TAG = "WaSMS_BOOT"
         const val CHANNEL_SERVICE = "wasms_service"
         const val CHANNEL_ALERTS = "wasms_alerts"
         const val CHANNEL_DIGEST = "wasms_digest"

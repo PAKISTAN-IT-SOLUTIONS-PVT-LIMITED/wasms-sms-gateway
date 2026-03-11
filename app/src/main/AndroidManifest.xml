@@ -42,17 +42,23 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="35">
 
-        <!-- Main Activity -->
+        <!-- Crash Report / Launcher Activity (NO @AndroidEntryPoint — works even if Hilt fails) -->
         <activity
-            android:name=".presentation.MainActivity"
+            android:name=".presentation.CrashReportActivity"
             android:exported="true"
-            android:theme="@style/Theme.WaSMS.Splash"
-            android:windowSoftInputMode="adjustResize">
+            android:theme="@style/Theme.WaSMS.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Main Activity (requires Hilt — launched by CrashReportActivity if no crash) -->
+        <activity
+            android:name=".presentation.MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.WaSMS"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- SMS Sending Foreground Service -->
         <service

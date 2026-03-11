@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -40,10 +41,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.wasms.smsgateway.WaSmsApp
@@ -51,30 +50,39 @@ import net.wasms.smsgateway.presentation.common.theme.WaSmsTheme
 import java.io.File
 
 /**
- * Activity that displays crash logs from the previous session.
+ * Launcher activity that checks for crash logs BEFORE starting the main app.
  *
- * This is NOT the launcher activity. Instead, MainActivity checks for crash logs
- * on startup and launches this activity if one exists.
+ * This is a plain ComponentActivity (NOT @AndroidEntryPoint) so it works
+ * even when Hilt initialization has failed. This is critical because if
+ * WaSmsApp.onCreate()/super.onCreate() crashes, @AndroidEntryPoint activities
+ * would also crash, making crash logs invisible to the user.
  *
- * Runs in a separate process (:crash_handler) to avoid inheriting any corrupted
- * state from the crashed process.
+ * Flow:
+ * 1. Android starts WaSmsApp.onCreate() → may crash (caught) or succeed
+ * 2. This activity checks for crash_log.txt or WaSmsApp.hiltFailed
+ * 3. If crash detected → show crash report (Share/Copy/Dismiss)
+ * 4. If no crash → forward to MainActivity (which uses @AndroidEntryPoint)
  */
 class CrashReportActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        val crashLog = intent.getStringExtra(EXTRA_CRASH_LOG) ?: run {
-            // Try reading from file directly
-            val crashFile = File(filesDir, WaSmsApp.CRASH_LOG_FILE)
-            if (crashFile.exists()) crashFile.readText() else null
-        }
+        // Check if Hilt failed during Application initialization
+        val app = application as? WaSmsApp
+        val hiltFailed = app?.hiltFailed == true
 
-        if (crashLog.isNullOrBlank()) {
-            // No crash log, go to main
+        // Check for crash log from previous session or current failed init
+        val crashLog = intent.getStringExtra(EXTRA_CRASH_LOG) ?: readCrashLog()
+
+        if (crashLog == null && !hiltFailed) {
+            // No crash — proceed to main app
             startMainActivity()
             return
         }
+
+        val displayLog = crashLog ?: "Hilt DI initialization failed. Check logcat for details.\n\nFilter: WaSMS_BOOT"
 
         setContent {
             WaSmsTheme {
@@ -83,16 +91,34 @@ class CrashReportActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     CrashReportScreen(
-                        crashLog = crashLog,
-                        onShare = { shareCrashLog(crashLog) },
-                        onCopy = { copyCrashLog(crashLog) },
+                        crashLog = displayLog,
+                        onShare = { shareCrashLog(displayLog) },
+                        onCopy = { copyCrashLog(displayLog) },
                         onDismiss = {
                             deleteCrashLog()
-                            startMainActivity()
+                            if (hiltFailed) {
+                                // Can't start MainActivity without Hilt — just finish
+                                Toast.makeText(this, "Please restart the app", Toast.LENGTH_LONG).show()
+                                finish()
+                            } else {
+                                startMainActivity()
+                            }
                         }
                     )
                 }
             }
+        }
+    }
+
+    private fun readCrashLog(): String? {
+        return try {
+            val crashFile = File(filesDir, WaSmsApp.CRASH_LOG_FILE)
+            if (crashFile.exists()) {
+                val text = crashFile.readText()
+                if (text.isNotBlank()) text else null
+            } else null
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -113,9 +139,11 @@ class CrashReportActivity : ComponentActivity() {
     }
 
     private fun deleteCrashLog() {
-        val crashFile = File(filesDir, WaSmsApp.CRASH_LOG_FILE)
-        if (crashFile.exists()) {
-            crashFile.delete()
+        try {
+            val crashFile = File(filesDir, WaSmsApp.CRASH_LOG_FILE)
+            if (crashFile.exists()) crashFile.delete()
+        } catch (e: Exception) {
+            // Ignore
         }
     }
 
@@ -171,7 +199,7 @@ private fun CrashReportScreen(
                     color = Color(0xFFEF4444),
                 )
                 Text(
-                    text = "WaSMS Gateway crashed during the last session",
+                    text = "Please share this report so we can fix the issue",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
