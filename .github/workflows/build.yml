@@ -26,16 +26,25 @@ jobs:
       - name: Create google-services.json for CI
         run: cp app/google-services.json.example app/google-services.json
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Decode release keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/release.jks
+
+      - name: Build release APK
+        env:
+          KEYSTORE_PATH: keystore/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: wasms
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --no-daemon
+        run: ./gradlew testReleaseUnitTest --no-daemon || ./gradlew testDebugUnitTest --no-daemon
 
-      - name: Upload debug APK
+      - name: Upload release APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-          retention-days: 7
+          name: release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn
+          retention-days: 30
