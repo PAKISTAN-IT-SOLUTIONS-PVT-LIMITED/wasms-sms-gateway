@@ -34,6 +34,12 @@ object NetworkModule {
             .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("Accept", "application/json")
+                    .build()
+                chain.proceed(request)
+            }
             .addInterceptor(authInterceptor)
 
         // Logging: full body in debug, nothing in release

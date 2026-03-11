@@ -71,8 +71,8 @@ android {
             buildConfigField("String", "API_BASE_URL", "\"${(project.findProperty("overrideApiBaseUrl") as? String) ?: "https://wasms.net/new/api/v1"}\"")
             buildConfigField("String", "WS_HOST", "\"${(project.findProperty("overrideWsHost") as? String) ?: "wasms.net"}\"")
             buildConfigField("String", "WS_PATH", "\"${(project.findProperty("overrideWsPath") as? String) ?: "/new/app/wasms-gateway"}\"")
-            buildConfigField("Boolean", "FCM_ENABLED", (project.findProperty("overrideFcmEnabled") as? String) ?: "true")
-            buildConfigField("Boolean", "CERT_PINNING_ENABLED", (project.findProperty("overrideCertPinningEnabled") as? String) ?: "true")
+            buildConfigField("Boolean", "FCM_ENABLED", (project.findProperty("overrideFcmEnabled") as? String) ?: "false")
+            buildConfigField("Boolean", "CERT_PINNING_ENABLED", (project.findProperty("overrideCertPinningEnabled") as? String) ?: "false")
             signingConfig = signingConfigs.getByName("release")
         }
     }
