@@ -107,12 +107,24 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _isDisconnecting.update { true }
             try {
-                connectionRepository.disconnect()
+                // Disconnect WebSocket first (non-fatal if it fails)
+                try {
+                    connectionRepository.disconnect()
+                } catch (e: Exception) {
+                    Timber.w(e, "WebSocket disconnect failed (non-fatal)")
+                }
+
+                // Deregister from server and clear local state
                 deviceRepository.deregisterDevice()
                 Timber.i("Device disconnected successfully")
                 onDisconnected()
             } catch (e: Exception) {
-                Timber.e(e, "Failed to disconnect device")
+                Timber.e(e, "Failed to disconnect device: %s", e.message)
+                // Even if server call fails, clear local state so user can re-register
+                try {
+                    deviceRepository.deregisterDevice()
+                } catch (_: Exception) {}
+                onDisconnected()
             } finally {
                 _isDisconnecting.update { false }
             }
@@ -134,16 +146,26 @@ data class SettingsUiState(
     val isDisconnecting: Boolean = false,
     val error: String? = null,
 ) {
-    val teamName: String get() = device?.teamId ?: "--"
+    val teamName: String
+        get() {
+            val id = device?.teamId ?: return "--"
+            // Show shortened team ID if no team name available
+            if (id.length > 12) return "${id.take(8)}..."
+            return id
+        }
     val deviceName: String get() = device?.deviceName ?: "--"
     val deviceId: String
         get() {
             val id = device?.id ?: return "--"
-            // Mask device ID: show first 4 and last 4 chars
             if (id.length <= 8) return id
             return "${id.take(4)}...${id.takeLast(4)}"
         }
-    val appVersion: String get() = device?.appVersion ?: "--"
+    val appVersion: String
+        get() = try {
+            net.wasms.smsgateway.BuildConfig.VERSION_NAME
+        } catch (_: Exception) {
+            device?.appVersion ?: "--"
+        }
     val sendSpeed: String
         get() = "${config.maxSmsPerMinute}/min, ${config.maxSmsPerHour}/hr"
 }
