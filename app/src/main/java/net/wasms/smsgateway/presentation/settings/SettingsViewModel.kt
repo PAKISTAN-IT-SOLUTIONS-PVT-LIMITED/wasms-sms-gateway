@@ -148,8 +148,8 @@ data class SettingsUiState(
 ) {
     val teamName: String
         get() {
+            device?.teamName?.let { if (it.isNotBlank()) return it }
             val id = device?.teamId ?: return "--"
-            // Show shortened team ID if no team name available
             if (id.length > 12) return "${id.take(8)}..."
             return id
         }

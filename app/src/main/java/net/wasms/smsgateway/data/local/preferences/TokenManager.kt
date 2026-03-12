@@ -38,6 +38,7 @@ class TokenManager @Inject constructor(
         private const val KEY_SCOPES = "scopes"
         private const val KEY_DEVICE_ID = "device_id"
         private const val KEY_TEAM_ID = "team_id"
+        private const val KEY_TEAM_NAME = "team_name"
 
         /** Buffer before actual expiry to trigger proactive refresh. */
         private val NEAR_EXPIRY_BUFFER = 5.minutes
@@ -99,6 +100,10 @@ class TokenManager @Inject constructor(
         get() = prefs.getString(KEY_TEAM_ID, null)
         private set(value) = prefs.edit().putString(KEY_TEAM_ID, value).apply()
 
+    var teamName: String?
+        get() = prefs.getString(KEY_TEAM_NAME, null)
+        private set(value) = prefs.edit().putString(KEY_TEAM_NAME, value).apply()
+
     // --- Methods ---
 
     /**
@@ -120,6 +125,7 @@ class TokenManager @Inject constructor(
             .putString(KEY_SCOPES, response.tokens.scopes.joinToString(","))
             .putString(KEY_DEVICE_ID, response.device.id)
             .putString(KEY_TEAM_ID, response.device.teamId)
+            .putString(KEY_TEAM_NAME, response.device.teamName)
             .apply()
 
         Timber.d("Registration saved. Device: %s, Team: %s, Expires: %s",
@@ -176,6 +182,7 @@ class TokenManager @Inject constructor(
             .remove(KEY_SCOPES)
             .remove(KEY_DEVICE_ID)
             .remove(KEY_TEAM_ID)
+            .remove(KEY_TEAM_NAME)
             .apply()
 
         Timber.d("Token cleared")

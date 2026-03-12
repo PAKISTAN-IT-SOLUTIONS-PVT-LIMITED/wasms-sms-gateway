@@ -86,6 +86,9 @@ data class RegisteredDeviceDto(
     @SerialName("team_id")
     val teamId: String,
 
+    @SerialName("team_name")
+    val teamName: String? = null,
+
     @SerialName("device_name")
     val deviceName: String,
 

@@ -278,6 +278,7 @@ class DeviceRepositoryImpl @Inject constructor(
         return Device(
             id = tokenManager.deviceId ?: return null,
             teamId = tokenManager.teamId ?: "",
+            teamName = tokenManager.teamName,
             deviceName = devicePrefs.deviceName ?: "Unknown Device",
             deviceUid = devicePrefs.deviceUid,
             status = DeviceStatus.ONLINE,

@@ -5,6 +5,7 @@ import kotlinx.datetime.Instant
 data class Device(
     val id: String,
     val teamId: String,
+    val teamName: String? = null,
     val deviceName: String,
     val deviceUid: String,
     val status: DeviceStatus,
