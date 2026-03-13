@@ -82,6 +82,19 @@ interface SmsMessageDao {
 
     @Query("SELECT COUNT(*) FROM sms_messages WHERE state = :state")
     suspend fun countByState(state: SmsState): Int
+
+    /**
+     * Observe the count of messages sent (dispatched, delivered) since a given timestamp.
+     * Used to calculate messages-per-hour on the home dashboard.
+     */
+    @Query(
+        """
+        SELECT COUNT(*) FROM sms_messages
+        WHERE state IN ('dispatched_to_sim', 'sent', 'delivered')
+        AND sent_at >= :sinceEpochMillis
+        """
+    )
+    fun observeCountSentSince(sinceEpochMillis: Long): Flow<Int>
 }
 
 /**

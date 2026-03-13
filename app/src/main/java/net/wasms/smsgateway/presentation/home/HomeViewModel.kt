@@ -53,19 +53,21 @@ class HomeViewModel @Inject constructor(
         deviceRepository.observeDeviceStatus(),
         deviceRepository.observeSimCards(),
         connectionRepository.observeConnectionState(),
-        _isRefreshing,
-    ) { queueStats, deviceStatus, simCards, connectionState, isRefreshing ->
+        combine(_isRefreshing, messageRepository.observeMessagesPerHour()) { a, b -> a to b },
+    ) { queueStats, deviceStatus, simCards, connectionState, refreshAndRate ->
+        val (isRefreshing, messagesPerHour) = refreshAndRate
         val activeSim = simCards.firstOrNull { it.isActive }
+        val queueTotal = queueStats.pending + queueStats.sending
 
         HomeUiState(
             deviceStatus = deviceStatus,
             sentToday = queueStats.sentToday,
-            queueRemaining = queueStats.pending + queueStats.sending,
+            queueRemaining = queueTotal,
             activeSim = activeSim?.displayName,
             deliveryRate = queueStats.deliveryRate,
-            messagesPerHour = 0, // TODO: Calculate from time-bucketed stats
-            campaignName = null, // TODO: Wire to active campaign from server
-            creditBalance = null, // TODO: Wire to account credit balance
+            messagesPerHour = messagesPerHour,
+            campaignName = null,
+            creditBalance = if (queueTotal > 0) "$queueTotal queued" else "0 queued",
             connectionState = connectionState,
             isLoading = false,
             isRefreshing = isRefreshing,

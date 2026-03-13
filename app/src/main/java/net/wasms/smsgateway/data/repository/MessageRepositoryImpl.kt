@@ -61,6 +61,21 @@ class MessageRepositoryImpl @Inject constructor(
     }
 
     /**
+     * Observes the count of messages sent in the last 60 minutes.
+     * Used for the "messages/hour" stat on the home dashboard.
+     *
+     * Note: This uses a fixed "since" timestamp computed at subscription time.
+     * The Flow will still emit reactively when new messages are sent/delivered,
+     * because Room re-queries when the sms_messages table changes.
+     */
+    override fun observeMessagesPerHour(): Flow<Int> {
+        val oneHourAgo = Clock.System.now()
+            .minus(1, DateTimeUnit.HOUR, TimeZone.UTC)
+            .toEpochMilliseconds()
+        return messageDao.observeCountSentSince(oneHourAgo)
+    }
+
+    /**
      * Observes messages currently in pending states (created, queued, assigned).
      */
     override fun observePendingMessages(): Flow<List<SmsMessage>> {

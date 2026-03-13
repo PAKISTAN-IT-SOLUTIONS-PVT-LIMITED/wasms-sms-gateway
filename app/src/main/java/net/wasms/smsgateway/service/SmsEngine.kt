@@ -8,6 +8,7 @@ import android.telephony.SmsManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import net.wasms.smsgateway.data.local.db.dao.SimCardDao
 import net.wasms.smsgateway.domain.model.SimCard
+import kotlinx.coroutines.delay
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -39,7 +40,7 @@ class SmsEngine @Inject constructor(
      * @param messageId Our internal message ID (Room primary key) used to track status.
      * @return true if the SMS was successfully dispatched to the OS, false on immediate failure.
      */
-    fun sendSms(
+    suspend fun sendSms(
         subscriptionId: Int,
         destination: String,
         body: String,
@@ -53,6 +54,10 @@ class SmsEngine @Inject constructor(
             Timber.e("sendSms: Empty body for message $messageId")
             return false
         }
+
+        // Human-like micro-delay before sending
+        val microDelay = kotlin.random.Random.nextLong(100L, 500L)
+        delay(microDelay)
 
         return try {
             val smsManager = getSmsManagerForSubscription(subscriptionId)

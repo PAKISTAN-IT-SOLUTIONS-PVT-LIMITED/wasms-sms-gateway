@@ -180,9 +180,11 @@ private fun SummaryCards(state: HomeUiState) {
         modifier = Modifier.padding(bottom = 8.dp),
     )
 
-    // Delivery rate
-    val deliveryPercent = "%.1f%%".format(state.deliveryRate * 100)
+    // Delivery rate — show "--" when no messages have been sent today
+    val hasMessages = state.sentToday > 0 || state.deliveryRate > 0f
+    val deliveryPercent = if (hasMessages) "%.1f%%".format(state.deliveryRate * 100) else "--"
     val deliveryColor = when {
+        !hasMessages -> MaterialTheme.colorScheme.onSurfaceVariant
         state.deliveryRate >= 0.95f -> WaSmsTheme.statusColors.delivered
         state.deliveryRate >= 0.85f -> WaSmsTheme.statusColors.paused
         else -> WaSmsTheme.statusColors.failed
@@ -191,7 +193,7 @@ private fun SummaryCards(state: HomeUiState) {
         title = "Delivery Rate",
         value = deliveryPercent,
         valueColor = deliveryColor,
-        subtitle = if (state.sentToday > 0) "Based on ${state.sentToday} messages today" else null,
+        subtitle = if (hasMessages) "Based on ${state.sentToday} messages today" else "No messages today",
     )
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -204,13 +206,13 @@ private fun SummaryCards(state: HomeUiState) {
         StatCard(
             title = "Messages/Hour",
             value = "${state.messagesPerHour}",
-            subtitle = "Current rate",
+            subtitle = "Last 60 min",
             modifier = Modifier.weight(1f),
         )
         StatCard(
-            title = if (state.campaignName != null) "Campaign" else "Credits",
+            title = if (state.campaignName != null) "Campaign" else "Queue",
             value = state.campaignName ?: state.creditBalance ?: "--",
-            subtitle = if (state.campaignName != null) "Active" else "Balance",
+            subtitle = if (state.campaignName != null) "Active" else "Pending send",
             modifier = Modifier.weight(1f),
         )
     }

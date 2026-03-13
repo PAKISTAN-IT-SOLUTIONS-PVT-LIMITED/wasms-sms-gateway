@@ -269,6 +269,13 @@ class SmsSenderService : LifecycleService() {
                 DeviceConfig.DEFAULT
             }
 
+            // Check quiet hours before processing
+            if (isInQuietHours(config)) {
+                Timber.d("SmsSenderService: In quiet hours, sleeping until end")
+                delay(60_000) // Check again in 1 minute
+                continue
+            }
+
             // Fetch next batch
             val batch: List<SmsMessage> = try {
                 messageRepository.getNextBatch(config.batchSize)
@@ -291,10 +298,11 @@ class SmsSenderService : LifecycleService() {
 
                 val sent = processSingleMessage(message, config)
 
-                // Rate limiting: wait based on maxSmsPerMinute
+                // Rate limiting: wait based on maxSmsPerMinute with random jitter
                 if (sent && config.maxSmsPerMinute > 0) {
-                    val delayMs = (60_000L / config.maxSmsPerMinute)
-                        .coerceAtLeast(MIN_INTER_SMS_DELAY_MS)
+                    val baseDelay = 60_000L / config.maxSmsPerMinute
+                    val jitter = kotlin.random.Random.nextDouble(0.7, 1.5)
+                    val delayMs = (baseDelay * jitter).toLong().coerceIn(3_000L, 120_000L)
                     delay(delayMs)
                 }
             }
@@ -391,6 +399,30 @@ class SmsSenderService : LifecycleService() {
         }
 
         return dispatched
+    }
+
+    /**
+     * Check if the current time falls within the configured quiet hours.
+     * Supports overnight ranges (e.g., 22:00 to 06:00).
+     */
+    private fun isInQuietHours(config: DeviceConfig): Boolean {
+        val start = config.quietHoursStart ?: return false
+        val end = config.quietHoursEnd ?: return false
+        try {
+            val now = java.time.LocalTime.now()
+            val startTime = java.time.LocalTime.parse(start)
+            val endTime = java.time.LocalTime.parse(end)
+            return if (startTime <= endTime) {
+                // Same day range (e.g., 09:00 to 18:00)
+                now in startTime..endTime
+            } else {
+                // Overnight range (e.g., 22:00 to 06:00)
+                now >= startTime || now <= endTime
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to parse quiet hours")
+            return false
+        }
     }
 
     /**

@@ -7,6 +7,7 @@ import net.wasms.smsgateway.domain.model.SmsState
 
 interface MessageRepository {
     fun observeQueueStats(): Flow<QueueStats>
+    fun observeMessagesPerHour(): Flow<Int>
     fun observePendingMessages(): Flow<List<SmsMessage>>
     fun observeRecentMessages(limit: Int = 50): Flow<List<SmsMessage>>
     suspend fun getNextBatch(batchSize: Int): List<SmsMessage>
