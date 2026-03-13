@@ -12,6 +12,8 @@ import net.wasms.smsgateway.data.local.db.dao.SmsMessageDao
 import net.wasms.smsgateway.data.remote.websocket.ReverbWebSocketClient
 import net.wasms.smsgateway.data.remote.websocket.WebSocketEvent
 import net.wasms.smsgateway.domain.model.SmsState
+import net.wasms.smsgateway.data.remote.api.DeviceApi
+import net.wasms.smsgateway.data.remote.model.CommandAckRequest
 import net.wasms.smsgateway.domain.repository.DeviceRepository
 import net.wasms.smsgateway.domain.repository.MessageRepository
 import timber.log.Timber
@@ -33,7 +35,8 @@ class WebSocketEventProcessor @Inject constructor(
     private val webSocketClient: ReverbWebSocketClient,
     private val messageRepository: MessageRepository,
     private val deviceRepository: DeviceRepository,
-    private val smsMessageDao: SmsMessageDao
+    private val smsMessageDao: SmsMessageDao,
+    private val deviceApi: DeviceApi
 ) {
 
     private var processingJob: Job? = null
@@ -116,16 +119,45 @@ class WebSocketEventProcessor @Inject constructor(
     private fun handleCommand(event: WebSocketEvent.Command) {
         Timber.i("WebSocketEventProcessor: Command (id=%s, type=%s)", event.commandId, event.type)
         when (event.type) {
-            "pause" -> SmsSenderService.sendCommand(context, SmsSenderService.ACTION_PAUSE)
-            "resume" -> SmsSenderService.sendCommand(context, SmsSenderService.ACTION_RESUME)
+            "pause" -> {
+                SmsSenderService.sendCommand(context, SmsSenderService.ACTION_PAUSE)
+                ackCommand(event.commandId)
+            }
+            "resume" -> {
+                SmsSenderService.sendCommand(context, SmsSenderService.ACTION_RESUME)
+                ackCommand(event.commandId)
+            }
+            "test_sms" -> {
+                // Test SMS is handled via message queue, just ACK
+                ackCommand(event.commandId)
+            }
             "update_config" -> scope.launch {
                 try {
                     deviceRepository.fetchConfig()
+                    ackCommand(event.commandId)
                 } catch (e: Exception) {
                     Timber.e(e, "WebSocketEventProcessor: Failed to fetch config for command %s", event.commandId)
                 }
             }
-            else -> Timber.w("WebSocketEventProcessor: Unknown command type: %s", event.type)
+            else -> {
+                Timber.w("WebSocketEventProcessor: Unknown command type: %s", event.type)
+                ackCommand(event.commandId)
+            }
+        }
+    }
+
+    private fun ackCommand(commandId: String) {
+        scope.launch {
+            try {
+                val request = CommandAckRequest(
+                    status = "executed",
+                    executedAt = kotlinx.datetime.Clock.System.now().toString(),
+                )
+                deviceApi.acknowledgeCommand(commandId, request)
+                Timber.d("WebSocketEventProcessor: ACK sent for command %s", commandId)
+            } catch (e: Exception) {
+                Timber.w(e, "WebSocketEventProcessor: Failed to ACK command %s (non-fatal)", commandId)
+            }
         }
     }
 
