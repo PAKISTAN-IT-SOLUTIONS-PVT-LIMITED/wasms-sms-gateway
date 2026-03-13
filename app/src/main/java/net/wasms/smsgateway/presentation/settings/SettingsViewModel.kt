@@ -31,10 +31,12 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val deviceRepository: DeviceRepository,
     private val connectionRepository: ConnectionRepository,
+    private val simDetector: net.wasms.smsgateway.service.SimDetector,
 ) : ViewModel() {
 
     private val _device = MutableStateFlow<Device?>(null)
     private val _isDisconnecting = MutableStateFlow(false)
+    private val _isSyncing = MutableStateFlow(false)
 
     init {
         loadDevice()
@@ -46,6 +48,27 @@ class SettingsViewModel @Inject constructor(
                 _device.update { deviceRepository.getDevice() }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load device info")
+            }
+        }
+    }
+
+    fun syncDevice() {
+        viewModelScope.launch {
+            _isSyncing.update { true }
+            try {
+                // Re-detect SIM cards
+                simDetector.detectAndSync()
+                // Refresh config from server
+                deviceRepository.fetchConfig()
+                // Reload device info
+                _device.update { deviceRepository.getDevice() }
+                // Reconnect WebSocket
+                connectionRepository.reconnect()
+                Timber.i("Device sync completed")
+            } catch (e: Exception) {
+                Timber.e(e, "Device sync failed")
+            } finally {
+                _isSyncing.update { false }
             }
         }
     }
@@ -64,6 +87,7 @@ class SettingsViewModel @Inject constructor(
             config = config,
             connectionState = connectionState,
             isLoading = false,
+            isSyncing = _isSyncing.value,
         )
     }
         .catch { throwable ->
@@ -144,6 +168,7 @@ data class SettingsUiState(
     val connectionState: ConnectionState = ConnectionState.DISCONNECTED,
     val isLoading: Boolean = true,
     val isDisconnecting: Boolean = false,
+    val isSyncing: Boolean = false,
     val error: String? = null,
 ) {
     val teamName: String
@@ -153,6 +178,7 @@ data class SettingsUiState(
             if (id.length > 12) return "${id.take(8)}..."
             return id
         }
+    val fullTeamId: String get() = device?.teamId ?: "--"
     val deviceName: String get() = device?.deviceName ?: "--"
     val deviceId: String
         get() {
@@ -160,6 +186,7 @@ data class SettingsUiState(
             if (id.length <= 8) return id
             return "${id.take(4)}...${id.takeLast(4)}"
         }
+    val fullDeviceId: String get() = device?.id ?: "--"
     val appVersion: String
         get() = try {
             net.wasms.smsgateway.BuildConfig.VERSION_NAME

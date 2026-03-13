@@ -1,5 +1,7 @@
 package net.wasms.smsgateway.presentation.settings
 
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,25 +15,28 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SimCard
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -44,7 +49,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,17 +64,6 @@ import net.wasms.smsgateway.domain.model.SimCard
 import net.wasms.smsgateway.presentation.common.components.StatusIndicator
 import net.wasms.smsgateway.presentation.common.theme.WaSmsTheme
 
-/**
- * Settings screen — Layer 3 of the information hierarchy.
- *
- * Organized into progressive disclosure sections:
- * - Account: Team, device name, device ID
- * - SIM Management: Active SIMs with daily limits
- * - Sending: Pause/resume, speed display
- * - Connection: WebSocket status, last sync
- * - About: Version, server URL
- * - Danger Zone: Disconnect device
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -73,6 +72,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDisconnectDialog by remember { mutableStateOf(false) }
+    var showIdDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     if (showDisconnectDialog) {
         DisconnectConfirmationDialog(
@@ -81,6 +81,14 @@ fun SettingsScreen(
                 viewModel.disconnectDevice(onDeviceDisconnected)
             },
             onDismiss = { showDisconnectDialog = false },
+        )
+    }
+
+    showIdDialog?.let { (title, fullId) ->
+        IdDetailDialog(
+            title = title,
+            fullId = fullId,
+            onDismiss = { showIdDialog = null },
         )
     }
 
@@ -93,6 +101,26 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
+                },
+                actions = {
+                    IconButton(
+                        onClick = { viewModel.syncDevice() },
+                        enabled = !uiState.isSyncing,
+                    ) {
+                        if (uiState.isSyncing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Filled.Sync,
+                                contentDescription = "Sync",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -112,10 +140,18 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             // Account Section
-            AccountSection(uiState)
+            AccountSection(
+                state = uiState,
+                onTeamIdClick = { showIdDialog = "Team ID" to uiState.fullTeamId },
+                onDeviceIdClick = { showIdDialog = "Device ID" to uiState.fullDeviceId },
+            )
 
             // SIM Management Section
-            SimManagementSection(uiState.simCards)
+            SimManagementSection(
+                simCards = uiState.simCards,
+                onRefreshSims = { viewModel.syncDevice() },
+                isSyncing = uiState.isSyncing,
+            )
 
             // Sending Section
             SendingSection(
@@ -152,13 +188,21 @@ fun SettingsScreen(
 // =============================================================================
 
 @Composable
-private fun AccountSection(state: SettingsUiState) {
+private fun AccountSection(
+    state: SettingsUiState,
+    onTeamIdClick: () -> Unit,
+    onDeviceIdClick: () -> Unit,
+) {
     SettingsSection(title = "Account", icon = Icons.Filled.PhoneAndroid) {
         SettingsRow(label = "Team", value = state.teamName)
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
         SettingsRow(label = "Device Name", value = state.deviceName)
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-        SettingsRow(label = "Device ID", value = state.deviceId)
+        SettingsRowClickable(
+            label = "Device ID",
+            value = state.deviceId,
+            onClick = onDeviceIdClick,
+        )
     }
 }
 
@@ -167,14 +211,44 @@ private fun AccountSection(state: SettingsUiState) {
 // =============================================================================
 
 @Composable
-private fun SimManagementSection(simCards: List<SimCard>) {
+private fun SimManagementSection(
+    simCards: List<SimCard>,
+    onRefreshSims: () -> Unit,
+    isSyncing: Boolean,
+) {
     SettingsSection(title = "SIM Management", icon = Icons.Filled.SimCard) {
         if (simCards.isEmpty()) {
-            Text(
-                text = "No SIM cards detected",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "No SIM cards detected",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Make sure SMS permissions are granted and a SIM card is inserted.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onRefreshSims,
+                    enabled = !isSyncing,
+                ) {
+                    if (isSyncing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text("Detect SIM Cards")
+                }
+            }
         } else {
             simCards.forEachIndexed { index, sim ->
                 SimCardRow(sim = sim)
@@ -223,7 +297,6 @@ private fun SimCardRow(sim: SimCard) {
             }
         }
 
-        // Active/inactive indicator
         val statusColor = if (sim.isActive) {
             WaSmsTheme.statusColors.online
         } else {
@@ -250,7 +323,6 @@ private fun SendingSection(
     onResume: () -> Unit,
 ) {
     SettingsSection(title = "Sending", icon = Icons.Filled.Speed) {
-        // Pause/Resume toggle
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -296,7 +368,6 @@ private fun SendingSection(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        // Send speed display
         SettingsRow(label = "Send Speed", value = sendSpeed)
     }
 }
@@ -417,6 +488,58 @@ private fun DangerZoneSection(
 }
 
 // =============================================================================
+// ID Detail Dialog (tap to see full UUID + copy)
+// =============================================================================
+
+@Composable
+private fun IdDetailDialog(
+    title: String,
+    fullId: String,
+    onDismiss: () -> Unit,
+) {
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = title, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column {
+                Text(
+                    text = fullId,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    clipboardManager.setText(AnnotatedString(fullId))
+                    Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                    onDismiss()
+                },
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ContentCopy,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Copy")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        },
+    )
+}
+
+// =============================================================================
 // Disconnect Confirmation Dialog
 // =============================================================================
 
@@ -525,5 +648,42 @@ private fun SettingsRow(
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
         )
+    }
+}
+
+@Composable
+private fun SettingsRowClickable(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.Filled.ContentCopy,
+                contentDescription = "Tap to view full ID",
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
