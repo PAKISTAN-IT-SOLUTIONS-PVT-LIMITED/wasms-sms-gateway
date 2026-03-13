@@ -406,22 +406,15 @@ class SmsSenderService : LifecycleService() {
      * Supports overnight ranges (e.g., 22:00 to 06:00).
      */
     private fun isInQuietHours(config: DeviceConfig): Boolean {
-        val start = config.quietHoursStart ?: return false
-        val end = config.quietHoursEnd ?: return false
-        try {
-            val now = java.time.LocalTime.now()
-            val startTime = java.time.LocalTime.parse(start)
-            val endTime = java.time.LocalTime.parse(end)
-            return if (startTime <= endTime) {
-                // Same day range (e.g., 09:00 to 18:00)
-                now in startTime..endTime
-            } else {
-                // Overnight range (e.g., 22:00 to 06:00)
-                now >= startTime || now <= endTime
-            }
-        } catch (e: Exception) {
-            Timber.w(e, "Failed to parse quiet hours")
-            return false
+        val startHour = config.quietHoursStart ?: return false
+        val endHour = config.quietHoursEnd ?: return false
+        val currentHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        return if (startHour <= endHour) {
+            // Same day range (e.g., 9 to 18)
+            currentHour in startHour..endHour
+        } else {
+            // Overnight range (e.g., 22 to 6)
+            currentHour >= startHour || currentHour <= endHour
         }
     }
 
